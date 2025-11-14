@@ -18,9 +18,9 @@ export default function Request() {
               className="w-full p-3 rounded-xl border border-neutral-300 focus:outline-none focus:border-black"
             >
               <option value="">Choose...</option>
-              <option value="consultation">Consultation</option>
-              <option value="care">Home Care</option>
-              <option value="equipment">Equipment Rental</option>
+              <option value="consultation">Service 1</option>
+              <option value="care">Service 2</option>
+              <option value="equipment">Service 3</option>
             </select>
           </div>
 

@@ -16,7 +16,7 @@ export default function AdminDashboard() {
         <h2 className="text-3xl font-semibold mb-6">Requests</h2>
 
         <div className="p-6 bg-neutral-50 rounded-2xl shadow">
-          <p className="opacity-70">Ici tu vas afficher les demandes envoyées via le formulaire.</p>
+          <p className="opacity-70">afficher les demandes envoyées via le formulaire.</p>
         </div>
       </div>
     </main>
