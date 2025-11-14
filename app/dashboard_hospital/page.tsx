@@ -1,15 +1,9 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useState } from "react";
 
-// Import jsPDF en mode dynamic pour éviter l'erreur "unknown"
-const jsPDF = dynamic(() => import("jspdf").then((mod) => mod.jsPDF), {
-  ssr: false,
-});
-
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "quotes" | "comments">("requests");
 
   return (
     <main className="min-h-screen bg-white text-black">
@@ -17,6 +11,7 @@ export default function AdminDashboard() {
       <header className="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/60 border-b border-black/10 shadow-sm">
         <nav className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="font-semibold text-lg">Admin Panel Hospital</h1>
+
           <div className="space-x-6 hidden md:flex">
             <a href="/" className="hover:opacity-70">Home</a>
             <a href="/dashboard_hospital" className="hover:opacity-70">Dashboard</a>
@@ -24,52 +19,68 @@ export default function AdminDashboard() {
         </nav>
       </header>
 
-      {/* CONTENT */}
+      {/* PAGE CONTENT */}
       <div className="pt-28 max-w-6xl mx-auto px-6">
 
-        {/* ---- TABS ---- */}
-        <div className="flex gap-4 mb-10">
+        {/* TABS */}
+        <div className="flex space-x-4 mb-10">
           <button
             onClick={() => setActiveTab("requests")}
-            className={`px-6 py-3 rounded-lg border ${activeTab === "requests" ? "bg-black text-white" : "bg-neutral-100"}`}
+            className={`px-5 py-2 rounded-lg border ${
+              activeTab === "requests" ? "bg-black text-white" : "bg-white"
+            }`}
           >
             Requests
           </button>
 
           <button
             onClick={() => setActiveTab("quotes")}
-            className={`px-6 py-3 rounded-lg border ${activeTab === "quotes" ? "bg-black text-white" : "bg-neutral-100"}`}
+            className={`px-5 py-2 rounded-lg border ${
+              activeTab === "quotes" ? "bg-black text-white" : "bg-white"
+            }`}
           >
             Devis
           </button>
 
           <button
-            onClick={() => setActiveTab("comm")}
-            className={`px-6 py-3 rounded-lg border ${activeTab === "comm" ? "bg-black text-white" : "bg-neutral-100"}`}
+            onClick={() => setActiveTab("comments")}
+            className={`px-5 py-2 rounded-lg border ${
+              activeTab === "comments" ? "bg-black text-white" : "bg-white"
+            }`}
           >
-            Commercial
+            Comments
           </button>
         </div>
 
-        {/* ------------------ ONGLET REQUESTS ------------------ */}
+        {/* --------------------------
+              TAB : REQUESTS
+        --------------------------- */}
         {activeTab === "requests" && (
           <div className="p-6 bg-neutral-50 rounded-2xl shadow">
             <h2 className="text-2xl font-semibold mb-4">Requests</h2>
-            <p className="opacity-70"> les demandes envoyées via le formulaire.</p>
+            <p className="opacity-70">Ici tu vas afficher les demandes envoyées via le formulaire.</p>
           </div>
         )}
 
-        {/* ------------------ ONGLET DEVIS ------------------ */}
+        {/* --------------------------
+              TAB : QUOTES (DEVIS)
+        --------------------------- */}
         {activeTab === "quotes" && (
           <div className="p-6 bg-neutral-50 rounded-2xl shadow">
-            <h2 className="text-2xl font-semibold mb-4">Créer un devis</h2>
+            <h2 className="text-2xl font-semibold mb-6">Créer un devis</h2>
 
             <form id="quoteForm" className="grid md:grid-cols-2 gap-6">
               <input name="name" type="text" placeholder="Nom du patient" className="p-3 rounded-lg border border-black/20" />
               <input name="phone" type="text" placeholder="Téléphone" className="p-3 rounded-lg border border-black/20" />
               <input name="email" type="email" placeholder="Email" className="p-3 rounded-lg border border-black/20" />
               <input name="service" type="text" placeholder="Service demandé" className="p-3 rounded-lg border border-black/20" />
-              <textarea name="details" placeholder="Détails du devis" rows={4} className="p-3 rounded-lg border border-black/20 md:col-span-2"></textarea>
+
+              <textarea
+                name="details"
+                placeholder="Détails du devis"
+                rows={4}
+                className="p-3 rounded-lg border border-black/20 md:col-span-2"
+              ></textarea>
             </form>
 
             <button
@@ -81,13 +92,13 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ------------------ ONGLET COMMERCIALE ------------------ */}
-        {activeTab === "comm" && (
+        {/* --------------------------
+              TAB : COMMENTS
+        --------------------------- */}
+        {activeTab === "comments" && (
           <div className="p-6 bg-neutral-50 rounded-2xl shadow">
-            <h2 className="text-2xl font-semibold mb-4">Espace Commercial</h2>
-            <p className="opacity-70">
-               devis envoyés, relances, factures, notes commerciales, etc.
-            </p>
+            <h2 className="text-2xl font-semibold mb-4">Commentaires</h2>
+            <p className="opacity-70">Espace pour gérer les commentaires ou notes internes.</p>
           </div>
         )}
       </div>
@@ -99,21 +110,22 @@ export default function AdminDashboard() {
    FUNCTION : GENERATE PDF
 ----------------------------*/
 async function generateQuotePDF() {
-  const form = document.getElementById("quoteForm");
+  const form = document.getElementById("quoteForm") as HTMLFormElement;
 
   if (!form) return alert("Erreur : formulaire introuvable");
 
-  const jsPDFModule = await import("jspdf");
-  const doc = new jsPDFModule.jsPDF();
+  const name = (form.querySelector("input[name='name']") as HTMLInputElement).value;
+  const phone = (form.querySelector("input[name='phone']") as HTMLInputElement).value;
+  const email = (form.querySelector("input[name='email']") as HTMLInputElement).value;
+  const service = (form.querySelector("input[name='service']") as HTMLInputElement).value;
+  const details = (form.querySelector("textarea[name='details']") as HTMLTextAreaElement).value;
 
-  const name = form.querySelector("input[name='name']").value;
-  const phone = form.querySelector("input[name='phone']").value;
-  const email = form.querySelector("input[name='email']").value;
-  const service = form.querySelector("input[name='service']").value;
-  const details = form.querySelector("textarea[name='details']").value;
+  const { jsPDF } = await import("jspdf");
+
+  const doc = new jsPDF();
 
   doc.setFontSize(18);
-  doc.text("Devis Hospital", 20, 20);
+  doc.text("📄 Devis Hospitalier", 20, 20);
 
   doc.setFontSize(12);
   doc.text(`Nom du patient: ${name}`, 20, 40);
