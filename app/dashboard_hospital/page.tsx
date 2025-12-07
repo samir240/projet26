@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "../components/Sidebar";
+
 
 interface User {
   id: number;
@@ -52,8 +52,7 @@ export default function DashboardHospital() {
 
   return (
     <main className="min-h-screen bg-gray-50 flex">
-      {/* SIDEBAR */}
-      <Sidebar />
+     
 
       {/* CONTENT WRAPPER */}
       <div className="flex-1 ml-0 lg:ml-64">

@@ -20,7 +20,7 @@ export default function Navbar() {
         <h1 className="font-semibold text-lg">Brand</h1>
 
         <div className="space-x-6 hidden md:flex">
-          <a href="/dashboard_admin" className="hover:opacity-70">Admin</a>
+          <a href="/login" className="hover:opacity-70">Admin</a>
           <a href="/dashboard_hospital" className="hover:opacity-70">Hospital</a>
           <a href="#" className="hover:opacity-70"></a>
         </div>
