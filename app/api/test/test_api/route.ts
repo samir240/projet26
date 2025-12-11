@@ -1,27 +1,24 @@
-export async function POST(req: Request) {
+export async function POST(request) {
   try {
-    const body = await req.json();
+    const body = await request.json();
 
-    const res = await fetch("https://lepetitchaletoran.com/api/login.php", {
+    // Appel direct à ton PHP
+    const res = await fetch("https://lepetitchaletoran.com/api/create_request.php", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(body),
     });
 
-    // On récupère la réponse brute
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text }; // Si ce n’est pas du JSON
-    }
+    const data = await res.json();
+    return Response.json(data);
 
-    return Response.json({ success: true, data });
-  } catch (error) {
-    return Response.json(
-      { success: false, error: "Server error", details: (error as any).message },
-      { status: 500 }
-    );
+  } catch (err) {
+    return Response.json({
+      success: false,
+      message: "Server relay error",
+      error: err.message,
+    }, { status: 500 });
   }
 }

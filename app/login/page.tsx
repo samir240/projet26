@@ -35,7 +35,7 @@ export default function LoginPage() {
       if (user.system === "A") {
         router.push("/dashboard_admin");
       } else if (user.system === "B") {
-        router.push("/dashboard_hospital");
+        router.push("/dashboard1");
       } else {
         setError("System inconnu pour cet utilisateur");
       }

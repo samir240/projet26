@@ -17,7 +17,11 @@ export default function DashboardHospital() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"requests" | "quotes" | "comments">("requests");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // -------------------------------------------------------------
+  // AUTH CHECK
+  // -------------------------------------------------------------
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -45,18 +49,34 @@ export default function DashboardHospital() {
 
   if (loading) return <div>Loading...</div>;
 
+  // -------------------------------------------------------------
+  // LOGOUT
+  // -------------------------------------------------------------
   function handleLogout() {
     localStorage.removeItem("user");
     router.push("/login");
   }
 
+  // -------------------------------------------------------------
+  // RENDER
+  // -------------------------------------------------------------
   return (
     <main className="min-h-screen bg-gray-50 flex">
+
+      {/* SIDEBAR */}
      
 
-      {/* CONTENT WRAPPER */}
+      {/* BUTTON MOBILE */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white shadow rounded-xl"
+      >
+        ☰
+      </button>
+
+      {/* PAGE CONTENT */}
       <div className="flex-1 ml-0 lg:ml-64">
-        
+
         {/* HEADER */}
         <header className="fixed top-0 right-0 left-0 lg:left-64 bg-white/80 backdrop-blur-xl border-b border-gray-200 shadow-sm z-40">
           <nav className="flex justify-between items-center px-6 py-4">
@@ -109,7 +129,7 @@ export default function DashboardHospital() {
             ))}
           </div>
 
-          {/* CONTENT */}
+          {/* ---------------------- CONTENT ---------------------- */}
           {activeTab === "requests" && (
             <section className="p-6 bg-white rounded-2xl shadow">
               <h2 className="text-2xl font-semibold mb-4">Requests</h2>
