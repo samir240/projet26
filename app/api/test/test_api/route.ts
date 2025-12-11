@@ -1,24 +1,28 @@
-export async function POST(request) {
-  try {
-    const body = await request.json();
+import { NextRequest, NextResponse } from "next/server";
 
-    // Appel direct à ton PHP
-    const res = await fetch("https://lepetitchaletoran.com/api/create_request.php", {
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+
+    const res = await fetch("https://lepetitchaletoran.com/api/login1.php", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    const data = await res.json();
-    return Response.json(data);
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
+    }
 
-  } catch (err) {
-    return Response.json({
-      success: false,
-      message: "Server relay error",
-      error: err.message,
-    }, { status: 500 });
+    return NextResponse.json({ success: true, data });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: "Server error", details: error.message },
+      { status: 500 }
+    );
   }
 }
