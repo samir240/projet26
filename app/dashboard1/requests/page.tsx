@@ -1,239 +1,581 @@
-// app/dashboard/requests/page.tsx
-'use client'; 
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Eye, Pencil, Mail, Trash2, X } from 'lucide-react';
 
-// -------------------------------------------------------------
-// 1. Types & Données Statiques
-// -------------------------------------------------------------
 
 interface Request {
-  id: number;
-  patientName: string;
-  patientEmail: string;
-  procedure: string;
-  country: string;
-  agent: string;
-  source: string;
-  status: 'New' | 'In Progress' | 'Qualified' | 'Converted';
-  date: string;
+  /* ======================
+     REQUEST
+  ====================== */
+  id_request: number;
+  id_patient: number;
+  id_procedure: number | null;
+  id_commercial: number | null;
+  id_galerie: number | null;
+
+  langue: string;
+  message_patient: string | null;
+  status: string;
+
+  text_maladies: string | null;
+  text_allergies: string | null;
+  text_chirurgies: string | null;
+  text_medicaments: string | null;
+
+  id_coordi: number | null;
+  source: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+
+  created_at: string;
+  updated_at: string;
+
+  /* ======================
+     PATIENT
+  ====================== */
+  patient_id: number;
+  patient_tel: string | null;
+  patient_email: string | null;
+  patient_nom: string;
+  patient_prenom: string;
+  patient_langue: string | null;
+  patient_age: number | null;
+  patient_sexe: 'M' | 'F' | 'Autre' | null;
+  patient_pays: string | null;
+
+  /* ======================
+     DISPLAY (déjà utilisés)
+  ====================== */
+  nom_procedure?: string;
+  commercial_nom?: string;
+  commercial_prenom?: string;
 }
 
-const initialRequests: Request[] = [
-  { id: 1, patientName: 'Sophie Martin', patientEmail: 'sophie.martin@email.com', procedure: 'Rhinoplasty', country: 'France', agent: 'Jean Dupont', source: 'Website', status: 'New', date: '2024-02-10' },
-  { id: 2, patientName: 'Michael Johnson', patientEmail: 'michael.j@email.com', procedure: 'Hair Transplant', country: 'USA', agent: 'Marie Claire', source: 'Google Ads', status: 'In Progress', date: '2024-02-09' },
-  { id: 3, patientName: 'Anna Schmidt', patientEmail: 'anna.s@email.com', procedure: 'Liposuction', country: 'Germany', agent: 'Jean Dupont', source: 'Referral', status: 'Qualified', date: '2024-02-08' },
-  { id: 4, patientName: 'Juan Perez', patientEmail: 'juan.p@email.com', procedure: 'Breast Augmentation', country: 'Spain', agent: 'Marie Claire', source: 'Facebook', status: 'New', date: '2024-02-07' },
-  { id: 5, patientName: 'Kenji Tanaka', patientEmail: 'kenji.t@email.com', procedure: 'Facelift', country: 'Japan', agent: 'Lucie Dubois', source: 'Website', status: 'Qualified', date: '2024-02-06' },
-  { id: 6, patientName: 'Fátima Silva', patientEmail: 'fatima.s@email.com', procedure: 'Hair Transplant', country: 'Portugal', agent: 'Lucie Dubois', source: 'Google Ads', status: 'In Progress', date: '2024-02-05' },
-  { id: 7, patientName: 'Elsa Müller', patientEmail: 'elsa.m@email.com', procedure: 'Rhinoplasty', country: 'Switzerland', agent: 'Jean Dupont', source: 'Referral', status: 'Converted', date: '2024-02-04' },
-  { id: 8, patientName: 'George King', patientEmail: 'george.k@email.com', procedure: 'Liposuction', country: 'UK', agent: 'Marie Claire', source: 'Website', status: 'Qualified', date: '2024-02-03' },
-];
 
-// Mappage des statuts pour les couleurs et les libellés des KPI
-const statusMap = {
-  All: { color: 'bg-white border-gray-300', count: initialRequests.length },
-  New: { color: 'bg-blue-100 text-blue-700 border-blue-300', count: initialRequests.filter(r => r.status === 'New').length },
-  'In Progress': { color: 'bg-yellow-100 text-yellow-700 border-yellow-300', count: initialRequests.filter(r => r.status === 'In Progress').length },
-  Qualified: { color: 'bg-purple-100 text-purple-700 border-purple-300', count: initialRequests.filter(r => r.status === 'Qualified').length },
-  Converted: { color: 'bg-green-100 text-green-700 border-green-300', count: initialRequests.filter(r => r.status === 'Converted').length },
-};
-
-// -------------------------------------------------------------
-// 2. Composants de Style (pour la lisibilité)
-// -------------------------------------------------------------
-
-// Fonction pour déterminer la couleur du statut dans le tableau
-const getStatusClasses = (status: Request['status']) => {
-  switch (status) {
-    case 'New': return 'bg-blue-50 text-blue-600 border border-blue-300';
-    case 'In Progress': return 'bg-yellow-50 text-yellow-600 border border-yellow-300';
-    case 'Qualified': return 'bg-purple-50 text-purple-600 border border-purple-300';
-    case 'Converted': return 'bg-green-50 text-green-600 border border-green-300';
-    default: return 'bg-gray-50 text-gray-600 border border-gray-300';
-  }
-};
-
-
-// -------------------------------------------------------------
-// 3. Composant de Page Principal
-// -------------------------------------------------------------
-
+/* -------------------------------------------------------------
+  PAGE
+------------------------------------------------------------- */
 export default function RequestsPage() {
-  const [filterStatus, setFilterStatus] = useState<string>('All');
-  const [filteredRequests, setFilteredRequests] = useState(initialRequests);
-  // Simuler d'autres états de filtre (Agents, Sources, Date)
-  const [filterAgent, setFilterAgent] = useState<string>('All');
-  const [filterSource, setFilterSource] = useState<string>('All');
-  const [filterDate, setFilterDate] = useState<string>(''); // jj/mm/aaaa
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<Request[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Simuler la logique de filtrage (basique)
-  React.useEffect(() => {
-    let requests = initialRequests;
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterAgent, setFilterAgent] = useState('All');
+  const [filterSource, setFilterSource] = useState('All');
 
-    if (filterStatus !== 'All') {
-      requests = requests.filter(r => r.status === filterStatus);
+  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showMailModal, setShowMailModal] = useState(false);
+const [agents, setAgents] = useState<any[]>([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editRequest, setEditRequest] = useState<Request | null>(null);
+  const [activeTab, setActiveTab] = useState('general'); // 'general', 'medical', 'logistics'
+  /* -------------------------------------------------------------
+    FETCH API
+  ------------------------------------------------------------- */
+ useEffect(() => {
+  fetch("https://lepetitchaletoran.com/api/ia/requests.php")
+    .then(res => res.json())
+    .then((data: any[]) => {
+      const mapped: Request[] = data.map(r => ({
+        /* ======================
+           REQUEST
+        ====================== */
+        id_request: r.id_request,
+        id_patient: r.id_patient,
+        id_procedure: r.id_procedure,
+        id_commercial: r.id_commercial,
+        id_galerie: r.id_galerie,
+        langue: r.langue,
+        message_patient: r.message_patient,
+        status: r.status,
+        text_maladies: r.text_maladies,
+        text_allergies: r.text_allergies,
+        text_chirurgies: r.text_chirurgies,
+        text_medicaments: r.text_medicaments,
+        id_coordi: r.id_coordi,
+        source: r.source,
+        utm_source: r.utm_source,
+        utm_medium: r.utm_medium,
+        utm_campaign: r.utm_campaign,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+
+        /* ======================
+           PATIENT
+        ====================== */
+        patient_id: r.patient_id,
+        patient_tel: r.patient_tel,
+        patient_email: r.patient_email,
+        patient_nom: r.patient_nom,
+        patient_prenom: r.patient_prenom,
+        patient_langue: r.patient_langue,
+        patient_age: r.patient_age,
+        patient_sexe: r.patient_sexe,
+        patient_pays: r.patient_pays,
+
+        /* ======================
+           DISPLAY
+        ====================== */
+        nom_procedure: r.nom_procedure || '',
+        commercial_nom: r.commercial_nom || '',
+        commercial_prenom: r.commercial_prenom || '',
+        date: r.created_at
+      }));
+      setRequests(mapped);
+      setFilteredRequests(mapped);
+      setLoading(false);
+    })
+    .catch(() => setLoading(false));
+
+    fetch("https://lepetitchaletoran.com/api/ia/get_all_agents.php")
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) setAgents(data.data);
+    });
+}, []);
+
+
+  /* -------------------------------------------------------------
+    FILTER
+  ------------------------------------------------------------- */
+  useEffect(() => {
+    let data = requests;
+    if (filterStatus !== 'All') data = data.filter(r => r.status === filterStatus);
+    if (filterAgent !== 'All') data = data.filter(r => r.commercial_nom === filterAgent);
+    if (filterSource !== 'All') data = data.filter(r => r.source === filterSource);
+    setFilteredRequests(data);
+  }, [filterStatus, filterAgent, filterSource, requests]);
+
+  /* -------------------------------------------------------------
+    DELETE
+  ------------------------------------------------------------- */
+  const handleDelete = async (id: number) => {
+    if (!confirm("Supprimer cette requête ?")) return;
+
+    await fetch("https://lepetitchaletoran.com/api/ia/requests.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id_request: id })
+    });
+
+    setRequests(prev => prev.filter(r => r.id_request !== id));
+  };
+
+  /* -------------------------------------------------------------
+    STATUS STYLE
+  ------------------------------------------------------------- */
+  const getStatusClass = (s: Request['status']) => {
+    switch (s) {
+      case 'New': return 'bg-blue-100 text-blue-700';
+      case 'In Progress': return 'bg-yellow-100 text-yellow-700';
+      case 'Qualified': return 'bg-purple-100 text-purple-700';
+      case 'Converted': return 'bg-green-100 text-green-700';
     }
-    if (filterAgent !== 'All') {
-        requests = requests.filter(r => r.agent === filterAgent);
-    }
-    if (filterSource !== 'All') {
-        requests = requests.filter(r => r.source === filterSource);
-    }
-    // La date n'est pas implémentée ici mais le filtre UI est présent
+  };
 
-    setFilteredRequests(requests);
-  }, [filterStatus, filterAgent, filterSource, filterDate]);
+  if (loading) {
+    return <div className="p-10 text-center text-gray-500">Chargement...</div>;
+  }
 
-
+  /* -------------------------------------------------------------
+    RENDER
+  ------------------------------------------------------------- */
   return (
-    <div className="min-h-full">
-      
-      {/* HEADER SECTION */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-            <h1 className="text-3xl font-bold text-gray-900">Requests</h1>
-            <p className="text-gray-500 mt-1">Manage patient inquiries and leads</p>
-        </div>
-        <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition">
-          + New Request
-        </button>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-6">Requests</h1>
+
+      {/* FILTERS */}
+      <div className="bg-white p-4 rounded-xl shadow mb-6 grid grid-cols-3 gap-4">
+        <select className="border p-2 rounded" onChange={e => setFilterStatus(e.target.value)}>
+          <option value="All">All Status</option>
+          <option>New</option>
+          <option>In Progress</option>
+          <option>Qualified</option>
+          <option>Converted</option>
+        </select>
+
+        <select className="border p-2 rounded" onChange={e => setFilterAgent(e.target.value)}>
+          <option value="All">All Agents</option>
+          {[...new Set(requests.map(r => r.commercial_nom))].map(a => (
+            <option key={a}>{a}</option>
+          ))}
+        </select>
+
+        <select className="border p-2 rounded" onChange={e => setFilterSource(e.target.value)}>
+          <option value="All">All Sources</option>
+          {[...new Set(requests.map(r => r.source))].map(s => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
       </div>
 
-      {/* FILTER & ACTIONS SECTION */}
-      <div className="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200">
-        
-        {/* FILTERS ROW */}
-        <div className="flex items-center mb-6 border-b pb-4">
-            <h3 className="text-lg font-medium text-gray-700 mr-4">▼ Filter:</h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 flex-grow">
-                {/* Filter Status */}
-                <select 
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="All">All Status</option>
-                    {Object.keys(statusMap).filter(k => k !== 'All').map(status => (
-                        <option key={status} value={status}>{status}</option>
-                    ))}
-                </select>
-
-                {/* Filter Agents */}
-                <select 
-                    value={filterAgent}
-                    onChange={(e) => setFilterAgent(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="All">All Agents</option>
-                    <option value="Jean Dupont">Jean Dupont</option>
-                    <option value="Marie Claire">Marie Claire</option>
-                    <option value="Lucie Dubois">Lucie Dubois</option>
-                </select>
-
-                {/* Filter Sources */}
-                <select 
-                    value={filterSource}
-                    onChange={(e) => setFilterSource(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="All">All Sources</option>
-                    <option value="Website">Website</option>
-                    <option value="Google Ads">Google Ads</option>
-                    <option value="Referral">Referral</option>
-                    <option value="Facebook">Facebook</option>
-                </select>
-                
-                {/* Date Picker (Simulé) */}
-                <input 
-                    type="text" 
-                    placeholder="jj/mm/aaaa"
-                    value={filterDate}
-                    onChange={(e) => setFilterDate(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                />
-            </div>
-        </div>
-
-        {/* EXPORT ACTION */}
-        <div className="flex justify-end">
-            <button className="flex items-center text-gray-600 px-3 py-1 rounded-lg border border-gray-300 hover:bg-gray-50 transition">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m1-7h-3m-4 0H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V8a2 2 0 00-2-2z"/></svg>
-                Export
-            </button>
-        </div>
-      </div>
-
-
-      {/* KPI CARDS (Status Overview) */}
-      <div className="grid grid-cols-5 gap-4 mb-8">
-        {Object.entries(statusMap).map(([status, data]) => (
-          <div 
-            key={status}
-            onClick={() => setFilterStatus(status)}
-            className={`
-                p-5 rounded-xl text-center cursor-pointer transition transform hover:scale-[1.02]
-                border-2 ${data.color}
-                ${filterStatus === status ? 'shadow-xl ring-2 ring-blue-500' : 'shadow'}
-            `}
-          >
-            <div className={`text-4xl font-extrabold ${status === 'All' ? 'text-gray-900' : data.color.split(' ')[1]}`}>
-              {data.count}
-            </div>
-            <div className="text-lg font-semibold mt-1 text-gray-700">
-              {status}
-            </div>
-          </div>
-        ))}
-      </div>
-
-
-      {/* REQUESTS TABLE */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
+      {/* TABLE */}
+      <div className="bg-white rounded-xl shadow overflow-hidden">
+        <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PATIENT</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROCEDURE</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">COUNTRY</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AGENT</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SOURCE</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STATUS</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DATE</th>
+              <th className="p-3 text-left">ID</th>
+              <th className="p-3 text-left">Patient</th>
+              <th className="p-3 text-left">Procedure</th>
+              <th className="p-3 text-left">Agent</th>
+              <th className="p-3 text-left">Source</th>
+              <th className="p-3 text-left">Status</th>
+              <th className="p-3 text-left">Date</th>
+              <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredRequests.map((request) => (
-              <tr key={request.id} className="hover:bg-gray-50 transition duration-150">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{request.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-semibold text-gray-900">{request.patientName}</div>
-                  <div className="text-xs text-gray-500">{request.patientEmail}</div>
+          <tbody>
+            {filteredRequests.map(r => (
+              <tr key={r.id_request} className="border-t hover:bg-gray-50">
+                <td className="p-3">#{r.id_request}</td>
+                <td className="p-3">
+                  <div className="font-semibold">{r.patient_nom}</div>
+                  <div className="text-xs text-gray-500">{r.patient_email}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{request.procedure}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{request.country}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{request.agent}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{request.source}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-3 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(request.status)}`}>
-                    {request.status}
+                <td className="p-3">{r.nom_procedure}</td>
+                <td className="p-3">{r.commercial_nom}</td>
+                <td className="p-3">{r.source}</td>
+                <td className="p-3">
+                  <span className={`px-3 py-1 rounded-full text-xs ${getStatusClass(r.status)}`}>
+                    {r.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.date}</td>
+                <td className="p-3">{r.updated_at}</td>
+                <td className="p-3 text-right flex justify-end gap-3">
+                  <Eye
+                    className="cursor-pointer text-blue-600"
+                    onClick={() => { setSelectedRequest(r); setShowViewModal(true); }}
+                  />
+                  <Pencil
+                    className="cursor-pointer text-yellow-600"
+                    onClick={() => { setEditRequest(r); setShowEditModal(true); }}
+                  />
+                  <Mail
+                    className="cursor-pointer text-purple-600"
+                    onClick={() => { setSelectedRequest(r); setShowMailModal(true); }}
+                  />
+                  <Trash2
+                    className="cursor-pointer text-red-600"
+                    onClick={() => handleDelete(r.id_request)}
+                  />
+                </td>
               </tr>
             ))}
-            {filteredRequests.length === 0 && (
-                 <tr>
-                    <td colSpan={8} className="text-center py-10 text-gray-500 text-lg">
-                        Aucune requête trouvée pour les filtres sélectionnés.
-                    </td>
-                 </tr>
-            )}
           </tbody>
         </table>
       </div>
+
+      {/* VIEW MODAL */}
+      {showViewModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-xl relative">
+            <X className="absolute top-4 right-4 cursor-pointer" onClick={() => setShowViewModal(false)} />
+            <h2 className="text-xl font-bold mb-4">Request #{selectedRequest.id_request}</h2>
+            <pre className="text-sm bg-gray-50 p-4 rounded">
+{JSON.stringify(selectedRequest, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {/* MAIL MODAL */}
+      {showMailModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-lg relative">
+            <X className="absolute top-4 right-4 cursor-pointer" onClick={() => setShowMailModal(false)} />
+            <h2 className="text-xl font-bold mb-4">Envoyer un email</h2>
+
+            <select className="w-full border p-2 rounded mb-3">
+              <option>Premier contact</option>
+              <option>Demande documents</option>
+              <option>Proposition devis</option>
+              <option>Relance</option>
+            </select>
+
+            <textarea
+              className="w-full border p-3 rounded h-32"
+              defaultValue={`Bonjour ${selectedRequest.patient_nom},
+
+Nous avons bien reçu votre demande concernant ${selectedRequest.nom_procedure}.`}
+            />
+
+            <div className="text-right mt-4">
+              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Envoyer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+{/* EDIT MODAL */}
+{showEditModal && editRequest && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-xl w-full max-w-xl relative">
+      <X
+        className="absolute top-4 right-4 cursor-pointer"
+        onClick={() => setShowEditModal(false)}
+      />
+      <h2 className="text-xl font-bold mb-4">Modifier la requête #{editRequest.id_request}</h2>
+
+      {/* TABS */}
+      <div className="flex gap-2 mb-4">
+        <button
+          className={`px-3 py-1 rounded ${activeTab === 'general' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+          onClick={() => setActiveTab('general')}
+        >
+          General
+        </button>
+        <button
+          className={`px-3 py-1 rounded ${activeTab === 'patient' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+          onClick={() => setActiveTab('patient')}
+        >
+          Patient
+        </button>
+        <button
+          className={`px-3 py-1 rounded ${activeTab === 'medical' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+          onClick={() => setActiveTab('medical')}
+        >
+          Medical
+        </button>
+      </div>
+
+      {/* TAB CONTENT */}
+      {activeTab === 'general' && (
+        <>
+          <label className="block text-sm font-semibold mb-1">Status</label>
+          <select
+            className="w-full border p-2 mb-2"
+            value={editRequest.status}
+            onChange={(e) => setEditRequest({ ...editRequest, status: e.target.value })}
+          >
+            <option>New</option>
+            <option>In Progress</option>
+            <option>Qualified</option>
+            <option>Converted</option>
+          </select>
+
+    <label className="block text-sm font-semibold mb-1">Agent</label>
+<select
+  className="w-full border p-2 mb-2"
+  value={editRequest.id_commercial || ''}
+  onChange={(e) => {
+    const val = e.target.value;
+    const selectedId = val ? Number(val) : null;
+    const agentObj = agents.find(a => Number(a.id_commercial) === selectedId);
+    
+    setEditRequest({ 
+      ...editRequest, 
+      id_commercial: selectedId,
+      commercial_nom: agentObj ? agentObj.nom : '' 
+    });
+  }}
+>
+  <option value="">-- Sélectionner un agent --</option>
+  {agents.map((agent) => (
+    <option key={agent.id_commercial} value={agent.id_commercial}>
+      {agent.nom} {agent.prenom}
+    </option>
+  ))}
+</select>
+
+          <label className="block text-sm font-semibold mb-1">Source</label>
+          <input
+            className="w-full border p-2 mb-2"
+            value={editRequest.source || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, source: e.target.value })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Langue</label>
+          <input
+            className="w-full border p-2 mb-2"
+            value={editRequest.langue || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, langue: e.target.value })}
+          />
+        </>
+      )}
+
+      {activeTab === 'patient' && (
+        <>
+          <label className="block text-sm font-semibold mb-1">Nom</label>
+          <input
+            className="w-full border p-2 mb-2"
+            value={editRequest.patient_nom}
+            onChange={(e) => setEditRequest({ ...editRequest, patient_nom: e.target.value })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Prénom</label>
+          <input
+            className="w-full border p-2 mb-2"
+            value={editRequest.patient_prenom}
+            onChange={(e) => setEditRequest({ ...editRequest, patient_prenom: e.target.value })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Email</label>
+          <input
+            className="w-full border p-2 mb-2"
+            value={editRequest.patient_email || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, patient_email: e.target.value })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Téléphone</label>
+          <input
+            className="w-full border p-2 mb-2"
+            value={editRequest.patient_tel || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, patient_tel: e.target.value })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Âge</label>
+          <input
+            type="number"
+            className="w-full border p-2 mb-2"
+            value={editRequest.patient_age || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, patient_age: Number(e.target.value) })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Sexe</label>
+          <select
+            className="w-full border p-2 mb-2"
+            value={editRequest.patient_sexe || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, patient_sexe: e.target.value as 'M' | 'F' | 'Autre' })}
+          >
+            <option value="">Sélectionner</option>
+            <option value="M">M</option>
+            <option value="F">F</option>
+            
+          </select>
+
+          <label className="block text-sm font-semibold mb-1">Pays</label>
+          <input
+            className="w-full border p-2 mb-2"
+            value={editRequest.patient_pays || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, patient_pays: e.target.value })}
+          />
+        </>
+      )}
+
+      {activeTab === 'medical' && (
+        <>
+          <label className="block text-sm font-semibold mb-1">Maladies</label>
+          <textarea
+            className="w-full border p-2 mb-2"
+            value={editRequest.text_maladies || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, text_maladies: e.target.value })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Allergies</label>
+          <textarea
+            className="w-full border p-2 mb-2"
+            value={editRequest.text_allergies || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, text_allergies: e.target.value })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Chirurgies</label>
+          <textarea
+            className="w-full border p-2 mb-2"
+            value={editRequest.text_chirurgies || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, text_chirurgies: e.target.value })}
+          />
+
+          <label className="block text-sm font-semibold mb-1">Médicaments</label>
+          <textarea
+            className="w-full border p-2 mb-2"
+            value={editRequest.text_medicaments || ''}
+            onChange={(e) => setEditRequest({ ...editRequest, text_medicaments: e.target.value })}
+          />
+        </>
+      )}
+
+      {/* ACTIONS */}
+      <div className="flex justify-end gap-3 mt-4">
+        <button
+          className="px-4 py-2 border rounded"
+          onClick={() => setShowEditModal(false)}
+        >
+          Annuler
+        </button>
+<button
+  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+  onClick={async () => {
+    if (!editRequest) return;
+
+    try {
+      // On prépare le payload structuré exactement comme le PHP l'attend
+      const payload = {
+        action: 'update',
+        id_request: editRequest.id_request,
+        id_patient: editRequest.patient_id, // L'ID nécessaire pour la clause WHERE en PHP
+        
+        // Champs pour la table 'requests'
+        status: editRequest.status,
+        id_commercial: editRequest.id_commercial,
+        source: editRequest.source,
+        langue: editRequest.langue,
+        message_patient: editRequest.message_patient,
+        text_maladies: editRequest.text_maladies,
+        text_allergies: editRequest.text_allergies,
+        text_chirurgies: editRequest.text_chirurgies,
+        text_medicaments: editRequest.text_medicaments,
+
+        // Champs pour la table 'patients' (Objet imbriqué pour le if(isset($data['patient'])) du PHP)
+        patient: {
+          nom: editRequest.patient_nom,
+          prenom: editRequest.patient_prenom,
+          email: editRequest.patient_email,
+          numero_tel: editRequest.patient_tel,
+          age: editRequest.patient_age,
+          sexe: editRequest.patient_sexe,
+          pays: editRequest.patient_pays,
+          //poids: editRequest.patient_poids,
+          //taille: editRequest.patient_taille,
+          //smoker: editRequest.patient_smoker,
+          //imc: editRequest.patient_imc
+        }
+      };
+
+      console.log("Données envoyées au PHP :", payload);
+
+      const res = await fetch('/api/update-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+      console.log("Réponse de l'API :", result);
+
+      if (result.success) {
+        // Mise à jour de la liste locale pour éviter de recharger la page
+        setRequests((prev) =>
+          prev.map((r) => (r.id_request === editRequest.id_request ? { ...r, ...editRequest } : r))
+        );
+        setShowEditModal(false);
+        alert("Mise à jour effectuée avec succès !");
+      } else {
+        alert("Erreur API : " + result.error);
+      }
+
+    } catch (err) {
+      console.error("Erreur réseau ou syntaxe :", err);
+      alert("Impossible de contacter l'API.");
+    }
+  }}
+>
+  Enregistrer
+</button>
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+)}
+
 
     </div>
   );
