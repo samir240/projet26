@@ -48,7 +48,7 @@ interface Request {
   /* ======================
      DISPLAY (déjà utilisés)
   ====================== */
-  nom_procedure?: string;
+  procedure_nom?: string;
   commercial_nom?: string;
   commercial_prenom?: string;
 }
@@ -120,7 +120,7 @@ const [agents, setAgents] = useState<any[]>([]);
         /* ======================
            DISPLAY
         ====================== */
-        nom_procedure: r.nom_procedure || '',
+        procedure_nom: r.procedure_nom || '',
         commercial_nom: r.commercial_nom || '',
         commercial_prenom: r.commercial_prenom || '',
         date: r.created_at
@@ -236,7 +236,7 @@ const [agents, setAgents] = useState<any[]>([]);
                   <div className="font-semibold">{r.patient_nom}</div>
                   <div className="text-xs text-gray-500">{r.patient_email}</div>
                 </td>
-                <td className="p-3">{r.nom_procedure}</td>
+                <td className="p-3">{r.procedure_nom}</td>
                 <td className="p-3">{r.commercial_nom}</td>
                 <td className="p-3">{r.source}</td>
                 <td className="p-3">
@@ -300,7 +300,7 @@ const [agents, setAgents] = useState<any[]>([]);
               className="w-full border p-3 rounded h-32"
               defaultValue={`Bonjour ${selectedRequest.patient_nom},
 
-Nous avons bien reçu votre demande concernant ${selectedRequest.nom_procedure}.`}
+Nous avons bien reçu votre demande concernant ${selectedRequest.procedure_nom}.`}
             />
 
             <div className="text-right mt-4">

@@ -15,7 +15,7 @@ interface Request {
   patient_prenom: string;
   patient_email: string;
 
-  nom_procedure: string;
+  procedure_nom: string;
 
   commercial_nom: string;
   commercial_prenom: string;
@@ -109,7 +109,7 @@ export default function RequestsPage() {
                   </div>
                 </td>
 
-                <td className="p-3">{r.nom_procedure}</td>
+                <td className="p-3">{r.procedure_nom}</td>
 
                 <td className="p-3">
                   {r.commercial_nom} {r.commercial_prenom}
@@ -158,7 +158,7 @@ export default function RequestsPage() {
                 <strong>Email :</strong> {quoteRequest.patient_email}
               </p>
               <p>
-                <strong>Procédure :</strong> {quoteRequest.nom_procedure}
+                <strong>Procédure :</strong> {quoteRequest.procedure_nom}
               </p>
               <p>
                 <strong>Commercial :</strong>{' '}
