@@ -501,6 +501,7 @@ Nous avons bien reçu votre demande concernant ${selectedRequest.nom_procedure}.
   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
   onClick={async () => {
     if (!editRequest) return;
+    
 
     try {
       // On prépare le payload structuré exactement comme le PHP l'attend

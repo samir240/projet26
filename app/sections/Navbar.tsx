@@ -21,7 +21,7 @@ export default function Navbar() {
 
         <div className="space-x-6 hidden md:flex">
           <a href="/login" className="hover:opacity-70">Login</a>
-          <a href="/dashboard_hospital" className="hover:opacity-70">Hospital</a>
+          <a href="/loginH" className="hover:opacity-70">Hospital</a>
           <a href="#" className="hover:opacity-70"></a>
         </div>
       </nav>

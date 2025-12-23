@@ -17,7 +17,7 @@ export default function LoginPage() {
   setDebug("");
 
   try {
-    const res = await fetch("/api/test/test_api", {
+    const res = await fetch("../api/test/test_api", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -32,10 +32,10 @@ export default function LoginPage() {
       localStorage.setItem("user", JSON.stringify(user));
 
       // Redirection selon le system
-      if (user.system === "A") {
+      if (user.system === "B") {
         router.push("/dashboard_admin");
-      } else if (user.system === "B") {
-        router.push("/dashboard1");
+      } else if (user.system === "A") {
+        router.push("/dashboard2");
       } else {
         setError("System inconnu pour cet utilisateur");
       }
@@ -102,7 +102,7 @@ export default function LoginPage() {
       {/* Image droite */}
       <div
         className="hidden md:flex flex-1 bg-cover bg-center"
-        style={{ backgroundImage: "url('https://tverze.com/wp-content/uploads/2024/11/Traverze-Culture-Best-Medical-Tourism-Agency-in-Kenya-500x500.jpg')" }}
+        style={{ backgroundImage: "url('https://palmmedicalcenters.com/wp-content/uploads/2022/12/iStock-493216309.jpg')" }}
       ></div>
     </div>
   );
