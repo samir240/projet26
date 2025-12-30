@@ -23,7 +23,7 @@ const CloseIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" vie
 const navItems = [
   { href: "/dashboard1", label: " Dashboard" },
   { href: "/dashboard1/requests", label: " Requests" },
-  { href: "/dashboard/settings", label: " Paramètres" },
+  { href: "/dashboard1/Hopitaux", label: " Hopitaux" },
 ];
 
 // -------------------------------------------------------------------

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Eye, Pencil, Mail, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
+
 
 
 interface Request {
@@ -232,10 +234,18 @@ const [agents, setAgents] = useState<any[]>([]);
             {filteredRequests.map(r => (
               <tr key={r.id_request} className="border-t hover:bg-gray-50">
                 <td className="p-3">#{r.id_request}</td>
-                <td className="p-3">
-                  <div className="font-semibold">{r.patient_nom}</div>
-                  <div className="text-xs text-gray-500">{r.patient_email}</div>
-                </td>
+               <td className="p-3">
+  <Link
+    href={`/dashboard1/requests/${r.patient_id}`}
+    className="font-semibold text-blue-600 hover:underline"
+  >
+    {r.patient_nom} {r.patient_prenom}
+  </Link>
+
+  <div className="text-xs text-gray-500">
+    {r.patient_email}
+  </div>
+</td>
                 <td className="p-3">{r.procedure_nom}</td>
                 <td className="p-3">{r.commercial_nom}</td>
                 <td className="p-3">{r.source}</td>
