@@ -13,17 +13,44 @@ $method = $_SERVER['REQUEST_METHOD'];
 ====================== */
 if ($method === 'GET') {
 
+    // 1️⃣ Récupérer une procédure spécifique par id_relation avec nom
     if (isset($_GET['id'])) {
-        $stmt = $pdo->prepare("SELECT * FROM procedure_hospital WHERE id_relation = ?");
+        $stmt = $pdo->prepare("
+            SELECT ph.*, m.nom_procedure
+            FROM procedure_hospital ph
+            LEFT JOIN medical_procedures m ON ph.id_procedure = m.id_procedure
+            WHERE ph.id_relation = ?
+        ");
         $stmt->execute([$_GET['id']]);
         echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
         exit;
     }
 
-    $stmt = $pdo->query("SELECT * FROM procedure_hospital ORDER BY id_relation DESC");
+    // 2️⃣ Récupérer toutes les procédures d'un hôpital spécifique avec nom
+    if (isset($_GET['id_hospital'])) {
+        $stmt = $pdo->prepare("
+            SELECT ph.*, m.nom_procedure
+            FROM procedure_hospital ph
+            LEFT JOIN medical_procedures m ON ph.id_procedure = m.id_procedure
+            WHERE ph.id_hospital = ?
+            ORDER BY ph.id_relation DESC
+        ");
+        $stmt->execute([$_GET['id_hospital']]);
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        exit;
+    }
+
+    // 3️⃣ Récupérer toutes les procédures avec nom
+    $stmt = $pdo->query("
+        SELECT ph.*, m.nom_procedure
+        FROM procedure_hospital ph
+        LEFT JOIN medical_procedures m ON ph.id_procedure = m.id_procedure
+        ORDER BY ph.id_relation DESC
+    ");
     echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     exit;
 }
+
 
 /* ======================
    POST (CREATE / UPDATE / DELETE)

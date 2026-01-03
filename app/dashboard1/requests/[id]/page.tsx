@@ -72,7 +72,7 @@ export default function PatientDetailPage() {
   // Hospitals state
   const [availableHospitals, setAvailableHospitals] = useState<any[]>([]);
   const [assignedHospitals, setAssignedHospitals] = useState<any[]>([]);
-  const [selectedHospitalId, setSelectedHospitalId] = useState<number | null>(null);
+  const [selectedHospitalIds, setSelectedHospitalIds] = useState<number[]>([]);
   const [hospitalsLoading, setHospitalsLoading] = useState(false);
 
   useEffect(() => {
@@ -218,34 +218,44 @@ export default function PatientDetailPage() {
     }
   };
 
-  const addHospital = async () => {
-    if (!selectedHospitalId || !currentRequest) return;
+  const assignSelectedHospitals = async () => {
+    if (selectedHospitalIds.length === 0 || !currentRequest) return;
 
+    setHospitalsLoading(true);
     try {
-      const response = await fetch('/api/request_hospital', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_request: currentRequest.id_request,
-          id_hospital: selectedHospitalId,
-        }),
-      });
+      const promises = selectedHospitalIds.map(id =>
+        fetch('/api/request_hospital', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_request: currentRequest.id_request,
+            id_hospital: id,
+          }),
+        })
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erreur HTTP' }));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const responses = await Promise.all(promises);
+
+      for (const response of responses) {
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Erreur HTTP' }));
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
       }
 
-      const result = await response.json();
-      if (result.success) {
-        setSelectedHospitalId(null);
-        loadHospitals();
-      } else {
-        alert(result.error || 'Erreur lors de l\'ajout de l\'hôpital');
+      const results = await Promise.all(responses.map(r => r.json().catch(() => ({}))));
+      const failed = results.find(r => r && r.success === false);
+      if (failed) {
+        throw new Error(failed.error || 'Erreur lors de l\'assignation des hôpitaux');
       }
+
+      setSelectedHospitalIds([]);
+      await loadHospitals();
     } catch (err) {
-      console.error('Error adding hospital:', err);
-      alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout de l\'hôpital');
+      console.error('Error assigning hospitals:', err);
+      alert(err instanceof Error ? err.message : 'Erreur lors de l\'assignation des hôpitaux');
+    } finally {
+      setHospitalsLoading(false);
     }
   };
 
@@ -484,28 +494,24 @@ export default function PatientDetailPage() {
             <div className="space-y-6">
               <h2 className="text-xl font-semibold">Hôpitaux / destination demandées</h2>
               
-              {/* Add Hospital Section */}
+              {/* Add / Assign Hospital Section */}
               <div className="flex gap-3 items-center">
-                <select
-                  value={selectedHospitalId || ''}
-                  onChange={(e) => setSelectedHospitalId(Number(e.target.value) || null)}
-                  className="flex-1 border border-gray-300 rounded-lg p-2 bg-white"
-                >
-                  <option value="">Sélectionner un hôpital</option>
-                  {availableHospitals
-                    .filter(h => !assignedHospitals.some(ah => ah.id_hospital === h.id_hospital))
-                    .map(h => (
-                      <option key={h.id_hospital} value={h.id_hospital}>
-                        {h.nom} - {h.ville} ({h.pays}) - {h.prix_base} {h.devise}
-                      </option>
-                    ))}
-                </select>
+                <div className="flex-1 text-sm text-gray-600">
+                  Sélectionnez un ou plusieurs hôpitaux dans la liste <strong>Hôpitaux disponibles</strong> (cases à cocher), puis cliquez <strong>Assigner la sélection</strong>.
+                </div>
                 <button
-                  onClick={addHospital}
-                  disabled={!selectedHospitalId || hospitalsLoading}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled
+                  className="px-4 py-2 bg-gray-400 text-white rounded-lg text-sm"
+                  title="Désactivé pour le moment"
                 >
-                  Ajouter un hopital
+                  Ajouter un hôpital
+                </button>
+                <button
+                  onClick={assignSelectedHospitals}
+                  disabled={selectedHospitalIds.length === 0 || hospitalsLoading}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Assigner la sélection
                 </button>
               </div>
 
@@ -530,10 +536,14 @@ export default function PatientDetailPage() {
                             >
                               <input
                                 type="checkbox"
-                                checked={selectedHospitalId === hospital.id_hospital}
-                                onChange={() => setSelectedHospitalId(
-                                  selectedHospitalId === hospital.id_hospital ? null : hospital.id_hospital
-                                )}
+                                checked={selectedHospitalIds.includes(hospital.id_hospital)}
+                                onChange={() =>
+                                  setSelectedHospitalIds(prev =>
+                                    prev.includes(hospital.id_hospital)
+                                      ? prev.filter(id => id !== hospital.id_hospital)
+                                      : [...prev, hospital.id_hospital]
+                                  )
+                                }
                                 className="w-4 h-4"
                               />
                               <div className="flex-1">

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 25, 2025 at 04:24 PM
+-- Generation Time: Jan 03, 2026 at 10:27 AM
 -- Server version: 11.4.9-MariaDB
 -- PHP Version: 8.3.29
 
@@ -43,6 +43,25 @@ CREATE TABLE `appointments` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `case_managers`
+--
+
+CREATE TABLE `case_managers` (
+  `id_case_manager` int(11) NOT NULL,
+  `id_hospital` int(11) NOT NULL,
+  `fullname` varchar(255) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `profile_photo` varchar(255) DEFAULT NULL,
+  `countries_concerned` text DEFAULT NULL,
+  `id_coordinator` int(11) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -134,6 +153,18 @@ CREATE TABLE `hospitals` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `hospitals`
+--
+
+INSERT INTO `hospitals` (`id_hospital`, `nom`, `pays`, `nom_gerant`, `reviews`, `adresse`, `ville`, `certifications`, `note_google`, `latitude`, `longitude`, `description`, `logo`, `website`, `email`, `telephone`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Hospital MA', 'Turquie', 'Burak Conoglu', NULL, '112 Rue 12', 'Ankara', NULL, 6.00, NULL, NULL, NULL, NULL, NULL, 'mahospital@gmail.com', '0021745589', 1, '2025-12-29 10:21:20', '2025-12-29 10:21:20'),
+(2, 'Ankara Medical Center', 'Turquie', 'Burak Conoglu', NULL, '112 Atatürk Bulvari', 'Ankara', 'ISO 9001', 4.60, 39.93340000, 32.85970000, 'Centre médical moderne spécialisé en chirurgie et soins généraux.', NULL, 'https://ankaramedical.com', 'contact@ankaramedical.com', '+90 312 445 58 89', 1, '2025-12-29 12:32:31', '2025-12-29 12:32:31'),
+(3, 'Istanbul Health Clinic', 'Turquie', 'Mehmet Yilmaz', NULL, '45 Taksim Caddesi', 'Istanbul', 'JCI', 4.80, 41.00820000, 28.97840000, 'Clinique internationale reconnue pour le tourisme médical.', NULL, 'https://istanbulhealthclinic.com', 'info@istanbulhealthclinic.com', '+90 212 334 22 11', 1, '2025-12-29 12:32:31', '2025-12-29 12:32:31'),
+(4, 'Madrid Central Hospital', 'Espagne', 'Carlos Martinez', NULL, '120 Calle de Alcalá', 'Madrid', 'ISO 14001', 4.50, 40.41680000, -3.70380000, 'Hôpital public de référence avec services spécialisés.', NULL, 'https://madridcentralhospital.es', 'contact@madridcentralhospital.es', '+34 91 445 66 77', 1, '2025-12-29 12:32:31', '2025-12-29 12:32:31'),
+(5, 'Barcelona Advanced Clinic', 'Espagne', 'Javier Lopez', NULL, '78 Avinguda Diagonal', 'Barcelona', 'JCI', 4.70, 41.38510000, 2.17340000, 'Clinique privée haut de gamme orientée patients internationaux.', NULL, 'https://barcelonaadvancedclinic.es', 'info@barcelonaadvancedclinic.es', '+34 93 778 99 00', 1, '2025-12-29 12:32:31', '2025-12-29 12:32:31'),
+(6, 'test hospital add', 'uae', 'samiro', '0', '11 rue market', 'Dubai', 'uploads/hospital_6/certifications/cert_1767370902_structure_bdd.pdf', 0.00, 0.00000000, 0.00000000, '', 'uploads/hospital_6/logos/logo_1767370902_depositphotos_86833080-stock-illustration-white-plastic-bottle-for-pills.jpg', '', '', '', 1, '2026-01-02 16:21:41', '2026-01-02 16:33:15');
+
 -- --------------------------------------------------------
 
 --
@@ -152,6 +183,42 @@ CREATE TABLE `hospital_coordinators` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hospital_media`
+--
+
+CREATE TABLE `hospital_media` (
+  `id_media` int(11) NOT NULL,
+  `id_hospital` int(11) NOT NULL,
+  `nom` varchar(255) DEFAULT NULL,
+  `path` varchar(500) NOT NULL,
+  `langue` varchar(10) DEFAULT 'all',
+  `ordre` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hotels`
+--
+
+CREATE TABLE `hotels` (
+  `id_hotel` int(11) NOT NULL,
+  `id_hospital` int(11) NOT NULL,
+  `hotel_name` varchar(255) NOT NULL,
+  `stars` int(1) DEFAULT 3,
+  `adresse` varchar(255) DEFAULT NULL,
+  `hotel_website` varchar(255) DEFAULT NULL,
+  `single_room_price` decimal(10,2) DEFAULT NULL,
+  `double_room_price` decimal(10,2) DEFAULT NULL,
+  `photo` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -228,7 +295,7 @@ CREATE TABLE `patients` (
 
 INSERT INTO `patients` (`id_patient`, `numero_tel`, `email`, `nom`, `prenom`, `langue`, `ip_adresse`, `age`, `sexe`, `pays`, `poids`, `taille`, `smoker`, `imc`, `created_at`, `updated_at`) VALUES
 (1, '054565656', 'example@gmail.com', 'Grabara', 'luca', 'fr', '41.97.163.76', 31, 'M', 'Algerie', NULL, NULL, 0, NULL, '2025-12-11 10:11:10', '2025-12-23 19:25:47'),
-(2, NULL, 'abderrezak.merz@gmail.com', 'Zikou', NULL, 'fr', '54.172.56.37', NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-12-25 09:23:59', '2025-12-25 09:29:03');
+(2, NULL, 'abderrezak.merz@gmail.com', 'Zikou', 'blanco', 'fr', '54.172.56.37', NULL, 'M', 'Brazil', 90.00, 210.00, 0, 123.00, '2025-12-25 09:23:59', '2025-12-30 15:38:37');
 
 -- --------------------------------------------------------
 
@@ -248,6 +315,18 @@ CREATE TABLE `procedure_hospital` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `procedure_hospital`
+--
+
+INSERT INTO `procedure_hospital` (`id_relation`, `id_procedure`, `id_hospital`, `prix_base`, `devise`, `duree_sejour`, `description_specifique`, `is_active`, `created_at`, `updated_at`) VALUES
+(7, 2, 1, 500.00, 'EUR', NULL, NULL, 1, '2025-12-29 13:05:50', '2025-12-29 13:05:50'),
+(8, 3, 1, 420.00, 'EUR', NULL, NULL, 1, '2025-12-29 13:29:04', '2025-12-29 13:29:04'),
+(9, 1, 5, 500.00, 'EUR', NULL, NULL, 1, '2025-12-30 16:42:47', '2025-12-30 16:42:47'),
+(10, 1, 3, 500.00, 'EUR', NULL, NULL, 1, '2025-12-30 16:44:03', '2025-12-30 16:44:03'),
+(11, 1, 4, 1200.00, 'EUR', NULL, NULL, 1, '2025-12-30 16:44:34', '2025-12-30 16:44:34'),
+(12, 1, 2, 1200.00, 'EUR', NULL, NULL, 1, '2025-12-31 14:10:23', '2025-12-31 14:10:23');
 
 -- --------------------------------------------------------
 
@@ -360,7 +439,30 @@ INSERT INTO `requests` (`id_request`, `id_patient`, `id_procedure`, `id_commerci
 (4, 1, 2, 16, NULL, 'fr', NULL, 'Qualified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 11:24:15', '2025-12-23 10:58:08'),
 (5, 1, 1, 16, NULL, 'de', NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 11:28:11', '2025-12-22 17:37:37'),
 (6, 1, 3, 4, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-22 14:54:18', '2025-12-22 17:24:34'),
-(7, 2, 1, 4, NULL, NULL, NULL, 'Qualified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-25 09:23:59', '2025-12-25 09:28:45');
+(7, 2, 1, 16, NULL, NULL, NULL, 'Qualified', NULL, NULL, 'test chirg', NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-25 09:23:59', '2025-12-31 14:37:28');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `request_hospital`
+--
+
+CREATE TABLE `request_hospital` (
+  `id_relation` int(11) NOT NULL,
+  `id_request` int(11) NOT NULL,
+  `id_hospital` int(11) NOT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `request_hospital`
+--
+
+INSERT INTO `request_hospital` (`id_relation`, `id_request`, `id_hospital`, `is_active`, `created_at`, `updated_at`) VALUES
+(23, 7, 5, 0, '2025-12-31 14:05:16', '2026-01-02 15:33:21'),
+(24, 7, 4, 0, '2025-12-31 14:05:16', '2026-01-02 15:33:23');
 
 -- --------------------------------------------------------
 
@@ -562,6 +664,13 @@ ALTER TABLE `appointments`
   ADD KEY `idx_date_arrivee` (`date_arrivee`);
 
 --
+-- Indexes for table `case_managers`
+--
+ALTER TABLE `case_managers`
+  ADD PRIMARY KEY (`id_case_manager`),
+  ADD KEY `fk_cm_hospital` (`id_hospital`);
+
+--
 -- Indexes for table `doctors`
 --
 ALTER TABLE `doctors`
@@ -603,6 +712,21 @@ ALTER TABLE `hospital_coordinators`
   ADD PRIMARY KEY (`id_coordi`),
   ADD KEY `idx_hospital` (`id_hospital`),
   ADD KEY `idx_nom` (`nom_coordi`);
+
+--
+-- Indexes for table `hospital_media`
+--
+ALTER TABLE `hospital_media`
+  ADD PRIMARY KEY (`id_media`),
+  ADD KEY `idx_hospital` (`id_hospital`),
+  ADD KEY `idx_ordre` (`ordre`);
+
+--
+-- Indexes for table `hotels`
+--
+ALTER TABLE `hotels`
+  ADD PRIMARY KEY (`id_hotel`),
+  ADD KEY `fk_hotel_hospital` (`id_hospital`);
 
 --
 -- Indexes for table `medical_procedures`
@@ -677,6 +801,14 @@ ALTER TABLE `requests`
   ADD KEY `idx_created` (`created_at`);
 
 --
+-- Indexes for table `request_hospital`
+--
+ALTER TABLE `request_hospital`
+  ADD PRIMARY KEY (`id_relation`),
+  ADD KEY `idx_request` (`id_request`),
+  ADD KEY `idx_hospital` (`id_hospital`);
+
+--
 -- Indexes for table `roles`
 --
 ALTER TABLE `roles`
@@ -724,6 +856,12 @@ ALTER TABLE `appointments`
   MODIFY `id_appointment` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `case_managers`
+--
+ALTER TABLE `case_managers`
+  MODIFY `id_case_manager` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `doctors`
 --
 ALTER TABLE `doctors`
@@ -745,13 +883,25 @@ ALTER TABLE `historique_email`
 -- AUTO_INCREMENT for table `hospitals`
 --
 ALTER TABLE `hospitals`
-  MODIFY `id_hospital` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_hospital` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `hospital_coordinators`
 --
 ALTER TABLE `hospital_coordinators`
   MODIFY `id_coordi` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `hospital_media`
+--
+ALTER TABLE `hospital_media`
+  MODIFY `id_media` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `hotels`
+--
+ALTER TABLE `hotels`
+  MODIFY `id_hotel` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `medical_procedures`
@@ -775,7 +925,7 @@ ALTER TABLE `patients`
 -- AUTO_INCREMENT for table `procedure_hospital`
 --
 ALTER TABLE `procedure_hospital`
-  MODIFY `id_relation` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_relation` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `quotes`
@@ -794,6 +944,12 @@ ALTER TABLE `relances`
 --
 ALTER TABLE `requests`
   MODIFY `id_request` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `request_hospital`
+--
+ALTER TABLE `request_hospital`
+  MODIFY `id_relation` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -869,6 +1025,12 @@ ALTER TABLE `appointments`
   ADD CONSTRAINT `fk_appointment_request` FOREIGN KEY (`id_request`) REFERENCES `requests` (`id_request`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
+-- Constraints for table `case_managers`
+--
+ALTER TABLE `case_managers`
+  ADD CONSTRAINT `fk_cm_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `doctors`
 --
 ALTER TABLE `doctors`
@@ -893,6 +1055,12 @@ ALTER TABLE `historique_email`
 --
 ALTER TABLE `hospital_coordinators`
   ADD CONSTRAINT `fk_coordinator_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `hotels`
+--
+ALTER TABLE `hotels`
+  ADD CONSTRAINT `fk_hotel_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `notes`

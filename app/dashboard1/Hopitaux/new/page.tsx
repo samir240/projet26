@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -49,6 +49,8 @@ export default function NewHospitalPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('Profile');
   const [showOnline, setShowOnline] = useState(true);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
 
   const createHospital = async () => {
     if (!hospital.nom || !hospital.ville || !hospital.pays) {
@@ -60,7 +62,8 @@ export default function NewHospitalPage() {
     setError(null);
 
     try {
-      const response = await fetch('https://lepetitchaletoran.com/api/ia/hospitals.php', {
+      // Créer l'hôpital d'abord
+      const createResponse = await fetch('/api/hospitals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -69,16 +72,42 @@ export default function NewHospitalPage() {
         })
       });
 
-      const result = await response.json();
-      
-      if (result.success && result.id) {
-        alert('✅ Hôpital créé avec succès');
-        router.push(`/dashboard1/Hopitaux/${result.id}`);
-      } else {
-        setError(result.error || 'Erreur lors de la création');
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json().catch(() => ({ error: 'Erreur HTTP' }));
+        throw new Error(errorData.error || `HTTP error! status: ${createResponse.status}`);
       }
+
+      const createResult = await createResponse.json();
+      
+      if (!createResult.success || !createResult.id) {
+        throw new Error(createResult.error || 'Erreur lors de la création');
+      }
+
+      const newHospitalId = createResult.id;
+
+      // Si des fichiers sont sélectionnés, les uploader
+      if (logoFile || certificateFile) {
+        const formData = new FormData();
+        formData.append('id_hospital', String(newHospitalId));
+        if (logoFile) formData.append('logo', logoFile);
+        if (certificateFile) formData.append('certifications', certificateFile);
+
+        const uploadResponse = await fetch('/api/hospitals', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const uploadError = await uploadResponse.json().catch(() => ({ error: 'Erreur upload' }));
+          console.warn('Erreur lors de l\'upload des fichiers:', uploadError);
+          // On continue quand même, l'hôpital est créé
+        }
+      }
+
+      alert('✅ Hôpital créé avec succès');
+      router.push(`/dashboard1/Hopitaux/${newHospitalId}`);
     } catch (err) {
-      setError('Erreur lors de la création');
+      setError(err instanceof Error ? err.message : 'Erreur lors de la création');
       console.error(err);
     } finally {
       setLoading(false);
@@ -227,13 +256,17 @@ export default function NewHospitalPage() {
             <FileInput 
               label="Logo" 
               value={hospital.logo}
-              onChange={v => setHospital({ ...hospital, logo: v })} 
+              onChange={v => setHospital({ ...hospital, logo: v })}
+              onFileSelect={setLogoFile}
+              currentFile={logoFile}
             />
 
             <FileInput 
               label="Direct Price Warranty certificate" 
               value={hospital.certifications}
-              onChange={v => setHospital({ ...hospital, certifications: v })} 
+              onChange={v => setHospital({ ...hospital, certifications: v })}
+              onFileSelect={setCertificateFile}
+              currentFile={certificateFile}
             />
 
             <div className="md:col-span-2">
@@ -312,12 +345,26 @@ function Input({
 function FileInput({ 
   label, 
   value, 
-  onChange 
+  onChange,
+  onFileSelect,
+  currentFile
 }: { 
   label: string; 
   value: string; 
   onChange: (v: string) => void;
+  onFileSelect?: (file: File | null) => void;
+  currentFile?: File | null;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onFileSelect) {
+      onFileSelect(file);
+      onChange(file.name); // Afficher le nom du fichier
+    }
+  };
+
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -327,18 +374,39 @@ function FileInput({
         <input
           type="text"
           className="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          value={value}
+          value={currentFile ? currentFile.name : value}
           onChange={e => onChange(e.target.value)}
-          placeholder="URL du fichier"
+          placeholder="URL du fichier ou sélectionner un fichier"
+          readOnly={!!currentFile}
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,.pdf"
+          onChange={handleFileSelect}
         />
         <button
           type="button"
+          onClick={() => fileInputRef.current?.click()}
           className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 text-sm"
         >
           Select
         </button>
+        {currentFile && (
+          <button
+            type="button"
+            onClick={() => {
+              if (onFileSelect) onFileSelect(null);
+              if (fileInputRef.current) fileInputRef.current.value = '';
+            }}
+            className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
+          >
+            ×
+          </button>
+        )}
       </div>
-      {value && (
+      {value && !currentFile && (
         <div className="mt-2">
           <a 
             href={value} 
@@ -348,6 +416,11 @@ function FileInput({
           >
             Voir le fichier
           </a>
+        </div>
+      )}
+      {currentFile && (
+        <div className="mt-2 text-xs text-green-600">
+          Fichier sélectionné: {currentFile.name} ({(currentFile.size / 1024).toFixed(2)} KB)
         </div>
       )}
     </div>
