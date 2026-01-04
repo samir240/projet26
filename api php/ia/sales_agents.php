@@ -8,11 +8,59 @@ include "config.php";
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+/* ==========================================================================
+   CONFIGURATION UPLOAD ET DOSSIER
+   ========================================================================== */
+$upload_dir = 'photos_agents/';
+
+// Créer le dossier s'il n'existe pas
+if (!is_dir($upload_dir)) {
+    mkdir($upload_dir, 0777, true);
+}
+
+/**
+ * Fonction pour traiter l'upload de photo (Base64 vers Fichier)
+ */
+function handlePhotoUpload($base64String, $uploadDir) {
+    // Si la chaîne ne commence pas par le préfixe data:image, ce n'est pas un nouvel upload base64
+    if (!preg_match('/^data:image\/(\w+);base64,/', $base64String, $type)) {
+        return $base64String; // Retourne la valeur actuelle (ex: nom du fichier existant)
+    }
+
+    // Extraire les données
+    $data = substr($base64String, strpos($base64String, ',') + 1);
+    $type = strtolower($type[1]); // jpg, png, gif, webp
+
+    // Vérification de l'extension
+    if (!in_array($type, ['jpg', 'jpeg', 'gif', 'png', 'webp'])) {
+        return null;
+    }
+
+    $data = base64_decode($data);
+    if ($data === false) return null;
+
+    // Générer un nom de fichier unique
+    $fileName = 'agent_' . uniqid() . '.' . $type;
+    $filePath = $uploadDir . $fileName;
+
+    if (file_put_contents($filePath, $data)) {
+        return $fileName; // On enregistre seulement le nom du fichier en BDD
+    }
+    return null;
+}
+
 /* ======================
-   GET
+    OPTIONS (Preflight)
+====================== */
+if ($method === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+/* ======================
+    GET
 ====================== */
 if ($method === 'GET') {
-
     if (isset($_GET['id'])) {
         $stmt = $pdo->prepare("SELECT * FROM sales_agents WHERE id_commercial = ?");
         $stmt->execute([$_GET['id']]);
@@ -26,7 +74,7 @@ if ($method === 'GET') {
 }
 
 /* ======================
-   POST (CREATE + UPDATE)
+    POST (CREATE + UPDATE)
 ====================== */
 if ($method === 'POST') {
 
@@ -52,8 +100,15 @@ if ($method === 'POST') {
 
         foreach ($allowed as $field) {
             if (array_key_exists($field, $data)) {
+                $val = $data[$field];
+
+                // TRAITEMENT PHOTO UPDATE
+                if ($field === 'photo' && !empty($val)) {
+                    $val = handlePhotoUpload($val, $upload_dir);
+                }
+
                 $fields[] = "$field = ?";
-                $values[] = $data[$field];
+                $values[] = $val;
             }
         }
 
@@ -73,6 +128,13 @@ if ($method === 'POST') {
     }
 
     /* ---------- CREATE ---------- */
+    
+    // TRAITEMENT PHOTO CREATE
+    $photoName = null;
+    if (!empty($data['photo'])) {
+        $photoName = handlePhotoUpload($data['photo'], $upload_dir);
+    }
+
     $stmt = $pdo->prepare("
         INSERT INTO sales_agents (id_user, nom, prenom, photo, email, telephone, langue, note, is_active)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -82,7 +144,7 @@ if ($method === 'POST') {
         $data['id_user'] ?? null,
         $data['nom'],
         $data['prenom'] ?? null,
-        $data['photo'] ?? null,
+        $photoName, // On stocke le nom du fichier physique
         $data['email'],
         $data['telephone'] ?? null,
         $data['langue'] ?? null,
@@ -95,7 +157,7 @@ if ($method === 'POST') {
 }
 
 /* ======================
-   DELETE
+    DELETE
 ====================== */
 if ($method === 'DELETE') {
 
@@ -104,6 +166,7 @@ if ($method === 'DELETE') {
         exit;
     }
 
+    // Optionnel : On peut supprimer le fichier physique ici si nécessaire
     $stmt = $pdo->prepare("DELETE FROM sales_agents WHERE id_commercial = ?");
     $stmt->execute([$_GET['id']]);
 
