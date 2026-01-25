@@ -20,6 +20,14 @@ if ($method === 'GET') {
         exit;
     }
 
+    // Filtrer par id_hospital si fourni
+    if (isset($_GET['id_hospital'])) {
+        $stmt = $pdo->prepare("SELECT * FROM hospital_coordinators WHERE id_hospital = ? ORDER BY id_coordi DESC");
+        $stmt->execute([$_GET['id_hospital']]);
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        exit;
+    }
+
     $stmt = $pdo->query("SELECT * FROM hospital_coordinators ORDER BY id_coordi DESC");
     echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     exit;

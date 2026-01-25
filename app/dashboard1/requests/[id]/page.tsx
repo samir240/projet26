@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { X, Bell } from 'lucide-react';
 
 interface Patient {
   id_patient: number;
@@ -61,13 +62,23 @@ export default function PatientDetailPage() {
   const patientId = params?.id as string;
 
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [editingPatient, setEditingPatient] = useState<Partial<Patient>>({});
   const [oldRequests, setOldRequests] = useState<OldRequest[]>([]);
   const [currentRequest, setCurrentRequest] = useState<CurrentRequest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [relances, setRelances] = useState<any[]>([]);
   
   const [mainTab, setMainTab] = useState<'Request' | 'Quotations' | 'Appointments'>('Request');
   const [subTab, setSubTab] = useState<'Patient infos' | 'Documents' | 'Treatments' | 'Hopitaux' | 'Relances'>('Patient infos');
   const [message, setMessage] = useState('');
+
+  // Email modals state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailModalType, setEmailModalType] = useState<'interest' | 'notAvailable' | 'additionalInfo' | 'consultation' | null>(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   // Hospitals state
   const [availableHospitals, setAvailableHospitals] = useState<any[]>([]);
@@ -79,15 +90,16 @@ export default function PatientDetailPage() {
     if (!patientId) return;
 
     // Fetch patient details
-    fetch(`https://lepetitchaletoran.com/api/ia/patients.php?id=${patientId}`)
+    fetch(`https://webemtiyaz.com/api/ia/patients.php?id=${patientId}`)
       .then(res => res.json())
       .then((data: Patient) => {
         setPatient(data);
+        setEditingPatient(data);
       })
       .catch(err => console.error('Error fetching patient:', err));
 
     // Fetch all requests for this patient
-    fetch('https://lepetitchaletoran.com/api/ia/requests.php')
+    fetch('https://webemtiyaz.com/api/ia/requests.php')
       .then(res => res.json())
       .then((data: any[]) => {
         const patientRequests = data.filter(r => r.patient_id === Number(patientId));
@@ -145,13 +157,39 @@ export default function PatientDetailPage() {
     }
   }, [subTab, currentRequest?.id_procedure]);
 
+  // Load relances when Relances tab is selected
+  useEffect(() => {
+    if (subTab === 'Relances' && currentRequest?.id_request) {
+      loadRelances();
+    }
+  }, [subTab, currentRequest?.id_request]);
+
+  const loadRelances = async () => {
+    if (!currentRequest?.id_request) return;
+    
+    try {
+      const res = await fetch('/api/relances');
+      const data = await res.json();
+      if (data && Array.isArray(data)) {
+        // Filtrer les relances pour cette requête
+        const filtered = data.filter((r: any) => r.id_request === currentRequest.id_request);
+        setRelances(filtered);
+      } else {
+        setRelances([]);
+      }
+    } catch (error) {
+      console.error("Erreur de chargement des relances:", error);
+      setRelances([]);
+    }
+  };
+
   const loadHospitals = async () => {
     if (!currentRequest?.id_procedure || !currentRequest?.id_request) return;
     
     setHospitalsLoading(true);
     try {
       // Load hospitals that offer the requested procedure
-      const procedureHospitalsRes = await fetch('https://lepetitchaletoran.com/api/ia/procedure_hospital.php');
+      const procedureHospitalsRes = await fetch('https://webemtiyaz.com/api/ia/procedure_hospital.php');
       if (!procedureHospitalsRes.ok) {
         throw new Error(`HTTP error! status: ${procedureHospitalsRes.status}`);
       }
@@ -163,7 +201,7 @@ export default function PatientDetailPage() {
       );
 
       // Get hospital details
-      const hospitalsRes = await fetch('https://lepetitchaletoran.com/api/ia/get_all_hospitals.php');
+      const hospitalsRes = await fetch('https://webemtiyaz.com/api/ia/get_all_hospitals.php');
       if (!hospitalsRes.ok) {
         throw new Error(`HTTP error! status: ${hospitalsRes.status}`);
       }
@@ -249,6 +287,30 @@ export default function PatientDetailPage() {
         throw new Error(failed.error || 'Erreur lors de l\'assignation des hôpitaux');
       }
 
+      // Mettre à jour le statut de la requête à "dispatched"
+      if (currentRequest.status !== 'dispatched') {
+        try {
+          const statusRes = await fetch('/api/update-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update',
+              id_request: currentRequest.id_request,
+              id_patient: currentRequest.id_patient,
+              status: 'dispatched'
+            }),
+          });
+
+          const statusResult = await statusRes.json();
+          if (statusResult.success) {
+            setCurrentRequest({ ...currentRequest, status: 'dispatched' });
+          }
+        } catch (statusErr) {
+          console.error('Error updating status:', statusErr);
+          // On continue même si la mise à jour du statut échoue
+        }
+      }
+
       setSelectedHospitalIds([]);
       await loadHospitals();
     } catch (err) {
@@ -319,11 +381,14 @@ export default function PatientDetailPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'New': return 'bg-blue-500';
-      case 'In Progress': return 'bg-yellow-500';
-      case 'Qualified': return 'bg-purple-500';
-      case 'Converted': return 'bg-green-500';
+      case 'affected': return 'bg-purple-500';
+      case 'dispatched': return 'bg-indigo-500';
+      case 'info request': return 'bg-yellow-500';
+      case 'NI': return 'bg-orange-500';
+      case 'NA': return 'bg-red-500';
+      case 'converted': return 'bg-green-500';
       case 'Awaiting': return 'bg-red-600';
-      default: return 'bg-red-600'; // Default to red for "Awaiting"
+      default: return 'bg-gray-500';
     }
   };
 
@@ -338,6 +403,166 @@ export default function PatientDetailPage() {
     };
   
     return flags[countryCode.toUpperCase()] || '🇬🇧';
+  };
+
+  const handleSavePatient = async () => {
+    if (!patient || !editingPatient) return;
+    
+    setSaving(true);
+    try {
+      const res = await fetch('/api/update-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          id_request: currentRequest?.id_request,
+          id_patient: patient.id_patient,
+          patient: {
+            nom: editingPatient.nom,
+            prenom: editingPatient.prenom,
+            email: editingPatient.email,
+            numero_tel: editingPatient.numero_tel,
+            langue: editingPatient.langue,
+            pays: editingPatient.pays,
+            age: editingPatient.age,
+            sexe: editingPatient.sexe,
+            poids: editingPatient.poids,
+            taille: editingPatient.taille,
+            smoker: editingPatient.smoker,
+            imc: editingPatient.imc,
+          }
+        }),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        setPatient({ ...patient, ...editingPatient } as Patient);
+        alert("Informations patient mises à jour avec succès !");
+      } else {
+        alert("Erreur: " + (result.error || 'Erreur inconnue'));
+      }
+    } catch (err) {
+      alert("Erreur lors de la sauvegarde");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveMessage = async () => {
+    if (!currentRequest) return;
+    
+    try {
+      const res = await fetch('/api/update-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          id_request: currentRequest.id_request,
+          id_patient: currentRequest.id_patient,
+          message_patient: message
+        }),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        setCurrentRequest({ ...currentRequest, message_patient: message });
+        alert("Message sauvegardé avec succès !");
+      } else {
+        alert("Erreur: " + (result.error || 'Erreur inconnue'));
+      }
+    } catch (err) {
+      alert("Erreur lors de la sauvegarde du message");
+    }
+  };
+
+  const openEmailModal = (type: 'interest' | 'notAvailable' | 'additionalInfo' | 'consultation') => {
+    setEmailModalType(type);
+    setShowEmailModal(true);
+    
+    // Pré-remplir le sujet et le corps selon le type
+    const patientName = patient ? `${patient.prenom} ${patient.nom}` : 'Client';
+    const patientEmail = patient?.email || '';
+    
+    switch (type) {
+      case 'interest':
+        setEmailSubject(`Êtes-vous toujours intéressé(e) ?`);
+        setEmailBody(`Bonjour ${patientName},\n\nNous souhaitons savoir si vous êtes toujours intéressé(e) par notre service.\n\nN'hésitez pas à nous contacter si vous avez des questions.\n\nCordialement,\nL'équipe`);
+        break;
+      case 'notAvailable':
+        setEmailSubject(`Service non disponible`);
+        setEmailBody(`Bonjour ${patientName},\n\nNous vous informons que le service demandé n'est actuellement pas disponible.\n\nNous vous contacterons dès que ce service sera à nouveau disponible.\n\nCordialement,\nL'équipe`);
+        break;
+      case 'additionalInfo':
+        setEmailSubject(`Demande d'informations supplémentaires`);
+        setEmailBody(`Bonjour ${patientName},\n\nNous avons besoin d'informations supplémentaires pour traiter votre demande.\n\nPourriez-vous nous fournir les détails suivants :\n\n- [À compléter]\n\nMerci pour votre collaboration.\n\nCordialement,\nL'équipe`);
+        break;
+      case 'consultation':
+        setEmailSubject(`Proposition de consultation`);
+        setEmailBody(`Bonjour ${patientName},\n\nNous vous proposons une consultation pour discuter de votre demande.\n\nSouhaitez-vous planifier cette consultation ?\n\nCordialement,\nL'équipe`);
+        break;
+    }
+  };
+
+  const closeEmailModal = () => {
+    setShowEmailModal(false);
+    setEmailModalType(null);
+    setEmailSubject('');
+    setEmailBody('');
+  };
+
+  const handleSendEmailAndUpdateStatus = async () => {
+    if (!currentRequest || !patient || !emailModalType) return;
+    
+    setSendingEmail(true);
+    try {
+      // Déterminer le nouveau statut selon le type
+      let newStatus: string | null = null;
+    
+      if (emailModalType === 'notAvailable') {
+        newStatus = 'NA';
+      } else if (emailModalType === 'consultation') {
+        newStatus = 'NI'; // Corrigé : consultation devient NI
+      } else if (emailModalType === 'additionalInfo') {
+        newStatus = 'info request';
+      }
+
+      // Envoyer l'email (à implémenter selon votre API email)
+      // Pour l'instant, on simule l'envoi
+      console.log('Envoi email à:', patient.email);
+      console.log('Sujet:', emailSubject);
+      console.log('Corps:', emailBody);
+
+      // Mettre à jour le statut si nécessaire
+      if (newStatus) {
+        const res = await fetch('/api/update-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update',
+            id_request: currentRequest.id_request,
+            id_patient: currentRequest.id_patient,
+            status: newStatus
+          }),
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          setCurrentRequest({ ...currentRequest, status: newStatus });
+          alert("Email envoyé et statut mis à jour avec succès !");
+          closeEmailModal();
+        } else {
+          alert("Erreur lors de la mise à jour du statut: " + (result.error || 'Erreur inconnue'));
+        }
+      } else {
+        // Pour "interest", on envoie juste l'email sans changer le statut
+        alert("Email envoyé avec succès !");
+        closeEmailModal();
+      }
+    } catch (err) {
+      alert("Erreur lors de l'envoi de l'email");
+    } finally {
+      setSendingEmail(false);
+    }
   };
   
 
@@ -604,15 +829,9 @@ export default function PatientDetailPage() {
                                   }`}
                                   title={relation.is_active === 1 ? 'Désactiver' : 'Activer'}
                                 >
-                                  {relation.is_active === 1 ? '✓' : '✗'}
+                                  {relation.is_active === 1 ? 'sent' : '✗'}
                                 </button>
-                                <button
-                                  onClick={() => removeHospital(relation.id_relation)}
-                                  className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                                  title="Retirer"
-                                >
-                                  ×
-                                </button>
+                               
                               </div>
                             </div>
                           </div>
@@ -625,11 +844,282 @@ export default function PatientDetailPage() {
             </div>
           )}
 
-          {mainTab === 'Request' && subTab !== 'Hopitaux' && (
+          {/* Patient infos Tab */}
+          {mainTab === 'Request' && subTab === 'Patient infos' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* LEFT SIDE - Old Files & Message */}
+              {/* LEFT SIDE - Patient Infos Only */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Old Files Table */}
+                <div className="bg-white border rounded-lg p-4">
+                  
+                  
+                    {/* Message */}
+                <div className="bg-white border rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-semibold">Message :</label>
+                  
+                  </div>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full border border-gray-300 rounded p-3 h-32 resize-y"
+                    
+                  />
+                </div>
+              </div>
+
+
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold border-b-2 border-orange-500 pb-2 inline-block">
+                      Infos du patient
+                    </h3>
+                    <button
+                      onClick={handleSavePatient}
+                      disabled={saving}
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 text-sm"
+                    >
+                      {saving ? 'Sauvegarde...' : 'Enregistrer'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Nom *</label>
+                      <input
+                        type="text"
+                        value={editingPatient.nom || ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, nom: e.target.value })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Prénom *</label>
+                      <input
+                        type="text"
+                        value={editingPatient.prenom || ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, prenom: e.target.value })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Sexe</label>
+                      <select
+                        value={editingPatient.sexe || ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, sexe: e.target.value as 'M' | 'F' | null })}
+                        className="w-full border p-2 rounded"
+                      >
+                        <option value="">Sélectionner</option>
+                        <option value="M">M</option>
+                        <option value="F">F</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Âge</label>
+                      <input
+                        type="number"
+                        value={editingPatient.age ?? ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, age: e.target.value ? Number(e.target.value) : null })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Téléphone</label>
+                      <input
+                        type="tel"
+                        value={editingPatient.numero_tel || ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, numero_tel: e.target.value })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={editingPatient.email || ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, email: e.target.value })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Langue</label>
+                      <input
+                        type="text"
+                        value={editingPatient.langue || ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, langue: e.target.value })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Pays</label>
+                      <input
+                        type="text"
+                        value={editingPatient.pays || ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, pays: e.target.value })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Poids (kg)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={editingPatient.poids ?? ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, poids: e.target.value ? Number(e.target.value) : null })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Taille (cm)</label>
+                      <input
+                        type="number"
+                        value={editingPatient.taille ?? ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, taille: e.target.value ? Number(e.target.value) : null })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Fumeur</label>
+                      <select
+                        value={editingPatient.smoker ?? ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, smoker: e.target.value ? Number(e.target.value) : null })}
+                        className="w-full border p-2 rounded"
+                      >
+                        <option value="">Non spécifié</option>
+                        <option value="0">Non</option>
+                        <option value="1">Oui</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">IMC</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={editingPatient.imc ?? ''}
+                        onChange={(e) => setEditingPatient({ ...editingPatient, imc: e.target.value ? Number(e.target.value) : null })}
+                        className="w-full border p-2 rounded"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              
+
+              {/* RIGHT SIDE - Quick Actions */}
+              <div className="lg:col-span-1">
+                <div className="bg-white border rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-4 border-b-2 border-orange-500 pb-2 inline-block">
+                    Respond / Set Quick Actions
+                  </h3>
+                  
+                  <div className="mb-4">
+                    <p className="text-sm font-medium mb-3">Tjr interessé ?</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => openEmailModal('interest')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
+                        Oui
+                      </button>
+                      <button 
+                        onClick={() => openEmailModal('notAvailable')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
+                        Set Not available
+                      </button>
+                      <button 
+                        onClick={() => openEmailModal('additionalInfo')}
+                        className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm col-span-2"
+                      >
+                        Req. Additional info
+                      </button>
+                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                        Source RS
+                      </button>
+                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                        Stop Sale
+                      </button>
+                      <button 
+                        onClick={() => openEmailModal('consultation')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
+                        Not Interested
+                      </button>
+                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                        Imp. de vs joindre
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Documents Tab */}
+          {mainTab === 'Request' && subTab === 'Documents' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Message :</label>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full border border-gray-300 rounded p-3 h-32 resize-y"
+                    placeholder="Ajouter un message..."
+                  />
+                </div>
+              </div>
+              <div className="lg:col-span-1">
+                <div className="bg-white border rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-4 border-b-2 border-orange-500 pb-2 inline-block">
+                    Respond / Set Quick Actions
+                  </h3>
+                  
+                  <div className="mb-4">
+                    <p className="text-sm font-medium mb-3">Tjr interessé ?</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => openEmailModal('interest')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
+                        Oui
+                      </button>
+                      <button 
+                        onClick={() => openEmailModal('notAvailable')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
+                        Set Not available
+                      </button>
+                      <button 
+                        onClick={() => openEmailModal('additionalInfo')}
+                        className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm col-span-2"
+                      >
+                        Req. Additional info
+                      </button>
+                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                        Source RS
+                      </button>
+                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                        Stop Sale
+                      </button>
+                      <button 
+                        onClick={() => openEmailModal('consultation')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
+                        Prop. consultation
+                      </button>
+                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                        Imp. de vs joindre
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Treatments Tab - Anciens dossiers */}
+          {mainTab === 'Request' && subTab === 'Treatments' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* LEFT SIDE - Old Files Table */}
+              <div className="lg:col-span-2">
                 <div>
                   <div className="bg-gray-200 px-4 py-2 font-semibold text-gray-700 rounded-t">
                     Anciens dossiers de ce patient
@@ -640,13 +1130,14 @@ export default function PatientDetailPage() {
                         <tr>
                           <th className="p-3 text-left">Procédures</th>
                           <th className="p-3 text-left">Date de soumission</th>
+                          <th className="p-3 text-left">Status</th>
                           <th className="p-3 text-left">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {oldRequests.length === 0 ? (
                           <tr>
-                            <td colSpan={3} className="p-4 text-center text-gray-500">
+                            <td colSpan={4} className="p-4 text-center text-gray-500">
                               Aucun dossier précédent
                             </td>
                           </tr>
@@ -655,6 +1146,11 @@ export default function PatientDetailPage() {
                             <tr key={req.id_request} className="border-t hover:bg-gray-50">
                               <td className="p-3">{req.procedure_nom || 'N/A'}</td>
                               <td className="p-3">{new Date(req.created_at).toLocaleDateString('fr-FR')}</td>
+                              <td className="p-3">
+                                <span className={`px-2 py-1 rounded text-xs ${getStatusColor(req.status)} text-white`}>
+                                  {req.status}
+                                </span>
+                              </td>
                               <td className="p-3">
                                 <Link
                                   href={`/dashboard1/requests?requestId=${req.id_request}`}
@@ -670,126 +1166,6 @@ export default function PatientDetailPage() {
                     </table>
                   </div>
                 </div>
-
-                {/* Message Textarea */}
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Message :</label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="w-full border border-gray-300 rounded p-3 h-32 resize-y"
-                    placeholder="Ajouter un message..."
-                  />
-                </div>
-                {/* Patient Infos */}
-<div className="mt-6 bg-white border rounded-lg p-4">
-  {/* Patient & Request Infos */}
-<div className="mt-6 bg-white border rounded-lg p-4">
-  <h3 className="text-lg font-semibold mb-4 border-b-2 border-orange-500 pb-2 inline-block">
-    Infos du patient
-  </h3>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-
-    {/* Patient Infos */}
-    <div>
-      <span className="font-semibold">Nom :</span> {patient.nom || 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Prénom :</span> {patient.prenom || 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Sexe :</span> {patient.sexe || 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Âge :</span> {patient.age ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Téléphone :</span> {patient.numero_tel || 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Email :</span> {patient.email || 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Langue :</span> {patient.langue || 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Pays :</span> {patient.pays || 'N/A'}
-    </div>
-
-    {/* Request Infos */}
-    <div>
-      <span className="font-semibold">ID Request :</span> {currentRequest?.id_request ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Procedure :</span> {currentRequest?.procedure_nom ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">ID Procedure :</span> {currentRequest?.id_procedure ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">ID Commercial :</span> {currentRequest?.id_commercial ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">ID Galerie :</span> {currentRequest?.id_galerie ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Langue Request :</span> {currentRequest?.langue ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Message Patient :</span> {currentRequest?.message_patient ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Status :</span> {currentRequest?.status ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Maladies :</span> {currentRequest?.text_maladies ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Allergies :</span> {currentRequest?.text_allergies ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Chirurgies :</span> {currentRequest?.text_chirurgies ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Médicaments :</span> {currentRequest?.text_medicaments ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">ID Coordinateur :</span> {currentRequest?.id_coordi ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Source :</span> {currentRequest?.source ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">UTM Source :</span> {currentRequest?.utm_source ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">UTM Medium :</span> {currentRequest?.utm_medium ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">UTM Campaign :</span> {currentRequest?.utm_campaign ?? 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Créé le :</span> {currentRequest?.created_at ? new Date(currentRequest.created_at).toLocaleString('fr-FR') : 'N/A'}
-    </div>
-    <div>
-      <span className="font-semibold">Mis à jour le :</span> {currentRequest?.updated_at ? new Date(currentRequest.updated_at).toLocaleString('fr-FR') : 'N/A'}
-    </div>
-    <div>
-  <span className="font-semibold">Poids :</span>{' '}
-  {patient.poids !== null ? `${patient.poids} kg` : 'N/A'}
-</div>
-
-<div>
-  <span className="font-semibold">Taille :</span>{' '}
-  {patient.taille !== null ? `${patient.taille} cm` : 'N/A'}
-</div>
-
-
-  </div>
-</div>
-
-</div>
-
               </div>
 
               {/* RIGHT SIDE - Quick Actions */}
@@ -802,13 +1178,22 @@ export default function PatientDetailPage() {
                   <div className="mb-4">
                     <p className="text-sm font-medium mb-3">Tjr interessé ?</p>
                     <div className="grid grid-cols-2 gap-2">
-                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                      <button 
+                        onClick={() => openEmailModal('interest')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
                         Oui
                       </button>
-                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                      <button 
+                        onClick={() => openEmailModal('notAvailable')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
                         Set Not available
                       </button>
-                      <button className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm col-span-2">
+                      <button 
+                        onClick={() => openEmailModal('additionalInfo')}
+                        className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm col-span-2"
+                      >
                         Req. Additional info
                       </button>
                       <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
@@ -817,7 +1202,10 @@ export default function PatientDetailPage() {
                       <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
                         Stop Sale
                       </button>
-                      <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                      <button 
+                        onClick={() => openEmailModal('consultation')}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
                         Prop. consultation
                       </button>
                       <button className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">
@@ -829,6 +1217,166 @@ export default function PatientDetailPage() {
               </div>
             </div>
           )}
+
+         {/* Relances Tab */}
+{mainTab === 'Request' && subTab === 'Relances' && (
+  <div className="space-y-6">
+    {/* FORMULAIRE RAPIDE POUR AJOUTER UNE RELANCE */}
+    <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
+      <h3 className="text-sm font-black text-orange-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+        <Bell size={16} /> Programmer un nouveau rappel
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-[10px] font-bold text-orange-700 uppercase mb-1">Date</label>
+          <input 
+            type="date" 
+            id="relance_date"
+            className="w-full border-none rounded-lg p-2 text-sm font-bold shadow-sm focus:ring-2 focus:ring-orange-500"
+            defaultValue={new Date().toISOString().split('T')[0]}
+          />
+        </div>
+        <div>
+  <label className="block text-[10px] font-bold text-orange-700 uppercase mb-1">Note / Détail</label>
+  <input 
+    type="text" 
+    id="relance_notes" 
+    placeholder="Ex: Appeler après 14h"
+    className="w-full border-none rounded-lg p-2 text-sm font-bold shadow-sm focus:ring-2 focus:ring-orange-500"
+  />
+</div>
+        <div className="md:col-span-2">
+          <label className="block text-[10px] font-bold text-orange-700 uppercase mb-1">Motif du rappel</label>
+          <input 
+            type="text" 
+            id="relance_motif"
+            placeholder="Ex: Attente confirmation vol..."
+            className="w-full border-none rounded-lg p-2 text-sm font-bold shadow-sm focus:ring-2 focus:ring-orange-500"
+          />
+        </div>
+        <div className="flex items-end">
+          <button 
+            onClick={async () => {
+              const date = (document.getElementById('relance_date') as HTMLInputElement).value;
+              const motif = (document.getElementById('relance_motif') as HTMLInputElement).value;
+              const prio = (document.getElementById('relance_notes') as HTMLSelectElement).value;
+
+              if(!motif) return alert("Veuillez saisir un motif");
+              
+              if (!currentRequest) {
+                alert("Erreur: Requête non trouvée");
+                return;
+              }
+
+              // Convertir la date en format datetime si nécessaire
+              const dateRelance = date ? `${date} 00:00:00` : new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+              const payload = {
+                action: 'create',
+                id_request: currentRequest.id_request,
+                id_commercial: currentRequest.id_commercial || null,
+                date_relance: dateRelance,
+                objet: motif,
+                notes: prio,
+                type_relance: 'manual',
+                status: 'new'
+              };
+
+              try {
+                const res = await fetch('/api/relances', {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                
+                if(res.ok && result.success) {
+                  alert("Rappel enregistré avec succès !");
+                  // Réinitialiser le formulaire
+                  (document.getElementById('relance_motif') as HTMLInputElement).value = '';
+                  (document.getElementById('relance_date') as HTMLInputElement).value = new Date().toISOString().split('T')[0];
+                  // Recharger les relances
+                  loadRelances();
+                } else {
+                  alert("Erreur: " + (result.error || 'Erreur lors de l\'enregistrement'));
+                  console.error('API Response:', result);
+                }
+              } catch (err) {
+                console.error('Error creating relance:', err);
+                alert("Erreur lors de l'enregistrement du rappel");
+              }
+            }}
+            className="w-full bg-orange-600 text-white font-black py-2 rounded-lg hover:bg-orange-700 transition-all text-xs uppercase tracking-widest"
+          >
+            Ajouter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* LISTE DES RELANCES LIÉES À CETTE REQUEST */}
+    <div className="bg-white border rounded-xl overflow-hidden">
+      <div className="p-4 border-b bg-gray-50/50">
+        <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Historique des relances pour cette demande</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50/50 border-b border-gray-100">
+              <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
+              <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Objet</th>
+              <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
+              <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {relances.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-center py-20 text-gray-400 font-medium italic">
+                  Aucune relance programmée
+                </td>
+              </tr>
+            ) : (
+              relances.map((rel) => (
+                <tr key={rel.id_relance} className={`hover:bg-gray-50/80 transition-colors ${rel.status === 'done' ? 'opacity-60' : ''}`}>
+                  <td className="px-6 py-5">
+                    <div className="text-sm font-bold text-gray-700">
+                      {new Date(rel.date_relance).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <p className="text-sm text-gray-700 font-bold">{rel.objet || 'Sans objet'}</p>
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600 uppercase">
+                      {rel.type_relance || 'autre'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase ${
+                      rel.status === 'done' ? 'bg-green-100 text-green-700' : 
+                      rel.status === 'new' ? 'bg-yellow-100 text-yellow-700' : 
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {rel.status === 'done' ? 'done' : rel.status === 'new' ? 'new' : 'canceled'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
 
           {mainTab === 'Quotations' && (
             <div className="text-center py-10 text-gray-500">
@@ -843,6 +1391,92 @@ export default function PatientDetailPage() {
           )}
         </div>
       </div>
+
+      {/* EMAIL MODAL */}
+      {showEmailModal && emailModalType && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-2xl relative shadow-xl">
+            <X
+              className="absolute top-4 right-4 cursor-pointer"
+              onClick={closeEmailModal}
+            />
+            <h2 className="text-xl font-bold mb-4">
+              {emailModalType === 'interest' && 'Demander si le client est toujours intéressé'}
+              {emailModalType === 'notAvailable' && 'Service non disponible'}
+              {emailModalType === 'additionalInfo' && 'Demander des informations supplémentaires'}
+              {emailModalType === 'consultation' && 'Proposer une consultation'}
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1">Destinataire</label>
+                <input
+                  type="email"
+                  value={patient?.email || ''}
+                  disabled
+                  className="w-full border p-2 rounded bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1">Sujet *</label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full border p-2 rounded"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1">Message *</label>
+                <textarea
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  className="w-full border p-2 rounded h-48 resize-y"
+                  required
+                />
+              </div>
+
+              {emailModalType === 'notAvailable' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm">
+                  <strong>Note:</strong> Le statut de la requête sera changé en <strong>NA</strong> après l'envoi de l'email.
+                </div>
+              )}
+
+              {emailModalType === 'additionalInfo' && (
+                <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm">
+                  <strong>Note:</strong> Le statut de la requête sera changé en <strong>info request</strong> après l'envoi de l'email.
+                </div>
+              )}
+
+              {emailModalType === 'consultation' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm">
+                  <strong>Note:</strong> Le statut de la requête sera changé en <strong>NA</strong> après l'envoi de l'email.
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button
+                  onClick={closeEmailModal}
+                  className="px-4 py-2 border rounded hover:bg-gray-50"
+                  disabled={sendingEmail}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSendEmailAndUpdateStatus}
+                  disabled={sendingEmail || !emailSubject || !emailBody || !patient?.email}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingEmail ? 'Envoi...' : 'Envoyer et valider'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* BACK BUTTON */}
       <div className="mt-6">

@@ -234,7 +234,7 @@ export default function HospitalEditPage() {
   const loadTreatments = async () => {
     setTreatmentsLoading(true);
     try {
-      const response = await fetch('https://lepetitchaletoran.com/api/ia/procedure_hospital.php');
+      const response = await fetch('https://webemtiyaz.com/api/ia/procedure_hospital.php');
       const data: Treatment[] = await response.json();
       // Filtrer par id_hospital
       const hospitalTreatments = data.filter(t => t.id_hospital === Number(id));
@@ -262,54 +262,21 @@ export default function HospitalEditPage() {
     }
   };
 
-  const uploadMedia = async () => {
-    if (selectedFiles.length === 0 || !id) {
-      alert('Veuillez sélectionner au moins un fichier');
-      return;
-    }
+const uploadMedia = async () => {
+  // Affiche l'ID dans une alerte
+  alert(`Vérification ID Hôpital : ${id}`);
 
-    console.log('Upload - Fichiers sélectionnés:', selectedFiles.length);
-    console.log('Upload - ID hôpital:', id);
+  // Affiche l'ID et les fichiers dans la console (F12)
+  console.log("--- TEST DEBUG ---");
+  console.log("ID Hôpital récupéré :", id);
+  console.log("Type de l'ID :", typeof id);
+  console.log("Nombre de fichiers sélectionnés :", selectedFiles.length);
+  console.log("------------------");
 
-    setMediaLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('id_hospital', String(id));
-      formData.append('langue', mediaLangue);
-      
-      // Ajouter chaque fichier avec la clé "files" (sans crochets pour Next.js)
-      selectedFiles.forEach((file, index) => {
-        console.log(`Ajout fichier ${index}:`, file.name, file.type, file.size);
-        formData.append('files', file);
-      });
+  // On arrête la fonction ici, rien n'est envoyé au serveur
+  return;
+};
 
-      // Vérifier les clés dans FormData
-      console.log('Clés FormData:', Array.from(formData.keys()));
-
-      const response = await fetch('/api/hospitals/media', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erreur HTTP' }));
-        throw new Error(errorData.error || 'Erreur lors de l\'upload');
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        setSelectedFiles([]);
-        loadMedia();
-      } else {
-        alert(result.error || 'Erreur lors de l\'upload');
-      }
-    } catch (err) {
-      console.error('Erreur lors de l\'upload:', err);
-      alert(err instanceof Error ? err.message : 'Erreur lors de l\'upload');
-    } finally {
-      setMediaLoading(false);
-    }
-  };
 
   const deleteMedia = async (idMedia: number) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce média ?')) return;
@@ -1808,7 +1775,7 @@ export default function HospitalEditPage() {
                         <div className="flex items-center gap-3">
                           {cm.profile_photo ? (
                             <img
-                              src={`https://lepetitchaletoran.com/${cm.profile_photo}`}
+                              src={`https://webemtiyaz.com/${cm.profile_photo}`}
                               alt={cm.fullname}
                               className="h-10 w-10 rounded-full object-cover"
                               onError={(e) => {
@@ -2130,7 +2097,7 @@ export default function HospitalEditPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {doctor.photo ? (
                           <img
-                            src={`https://lepetitchaletoran.com/${doctor.photo}`}
+                            src={`https://webemtiyaz.com/${doctor.photo}`}
                             alt={doctor.nom_medecin}
                             className="h-10 w-10 rounded-full object-cover"
                             onError={(e) => {
@@ -2269,7 +2236,7 @@ export default function HospitalEditPage() {
                     {!doctorPhoto && editingDoctor?.photo && (
                       <div className="mt-2 flex items-center gap-3">
                         <img
-                          src={`https://lepetitchaletoran.com/${editingDoctor.photo}`}
+                          src={`https://webemtiyaz.com/${editingDoctor.photo}`}
                           alt="Current photo"
                           className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
                           onError={(e) => {
@@ -2332,7 +2299,7 @@ export default function HospitalEditPage() {
                     {!doctorCV && editingDoctor?.cv && (
                       <div className="mt-2">
                         <a
-                          href={`https://lepetitchaletoran.com/${editingDoctor.cv}`}
+                          href={`https://webemtiyaz.com/${editingDoctor.cv}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-blue-600 hover:underline"

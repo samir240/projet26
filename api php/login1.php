@@ -38,9 +38,10 @@ $password = trim($data["password"]);
 
 // ----------- CHECK USER -----------
 $stmt = $conn->prepare("
-    SELECT u.id_user, u.password, u.system, r.nom_role AS nom_role
+    SELECT u.id_user, u.password, u.system, r.nom_role AS nom_role, u.id_hospital, h.nom AS hospital_nom
     FROM users u
     JOIN roles r ON u.id_role = r.id_role
+    LEFT JOIN hospitals h ON u.id_hospital = h.id_hospital
     WHERE u.email = ?
 ");
 $stmt->bind_param("s", $email);
@@ -56,14 +57,22 @@ $userData = $result->fetch_assoc();
 
 // ----------- VERIFY PASSWORD -----------
 if (password_verify($password, $userData["password"])) {
+    $userResponse = [
+        "id_user" => $userData["id_user"],
+        "email" => $email,
+        "nom_role" => $userData["nom_role"],
+        "system" => $userData["system"]
+    ];
+    
+    // Ajouter les infos hôpital si l'utilisateur appartient à un hôpital
+    if ($userData["id_hospital"]) {
+        $userResponse["id_hospital"] = $userData["id_hospital"];
+        $userResponse["hospital_nom"] = $userData["hospital_nom"] ?? null;
+    }
+    
     echo json_encode([
         "success" => true,
-        "user" => [
-            "id_user" => $userData["id_user"],
-            "email" => $email,
-            "nom_role" => $userData["nom_role"],
-            "system" => $userData["system"]
-        ]
+        "user" => $userResponse
     ]);
     exit();
 } else {

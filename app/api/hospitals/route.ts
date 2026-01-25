@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "id est requis" }, { status: 400 });
     }
 
-    const res = await fetch(`https://lepetitchaletoran.com/api/ia/hospitals.php?id=${id}`);
+    const res = await fetch(`https://webemtiyaz.com/api/ia/hospitals.php?id=${id}`);
     
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       if (certifications) phpFormData.append("certifications", certifications as File);
 
       // Envoyer à l'API PHP
-      const res = await fetch("https://lepetitchaletoran.com/api/ia/hospitals.php", {
+      const res = await fetch("https://webemtiyaz.com/api/ia/hospitals.php", {
         method: "POST",
         body: phpFormData,
       });
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     else {
       const body = await req.json();
 
-      const res = await fetch("https://lepetitchaletoran.com/api/ia/hospitals.php", {
+      const res = await fetch("https://webemtiyaz.com/api/ia/hospitals.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -106,7 +106,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "id_hospital est requis" }, { status: 400 });
     }
 
-    const res = await fetch("https://lepetitchaletoran.com/api/ia/hospitals.php", {
+    const res = await fetch("https://webemtiyaz.com/api/ia/hospitals.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

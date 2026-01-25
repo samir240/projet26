@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PHP_API_URL = "https://lepetitchaletoran.com/api/ia/sales_agents.php";
+const PHP_API_URL = "https://webemtiyaz.com/api/ia/sales_agents.php";
 
 // GET - Récupérer tous les agents ou un agent par ID
 export async function GET(req: NextRequest) {

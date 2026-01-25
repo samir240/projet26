@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Eye, Pencil, Mail, Trash2, X, User } from 'lucide-react';
+import { Eye, Pencil, Mail, Trash2, X, User, Archive } from 'lucide-react';
 import Link from 'next/link';
 import Flag from 'react-world-flags';
 
@@ -31,6 +31,7 @@ interface Request {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  archived: string | null;
 
   created_at: string;
   updated_at: string;
@@ -82,6 +83,11 @@ const [tempAgentRequest, setTempAgentRequest] = useState<Request | null>(null);
 
 const [showAddModal, setShowAddModal] = useState(false);
 const [procedures, setProcedures] = useState<any[]>([]);
+
+
+
+// Hospitals assigned by request ID
+const [hospitalsByRequest, setHospitalsByRequest] = useState<Record<number, any[]>>({});
 // New Request State (Contrôlé pour ne pas perdre la saisie)
 const [newRequest, setNewRequest] = useState<Partial<Request>>({
   status: 'New',
@@ -93,7 +99,7 @@ const [newRequest, setNewRequest] = useState<Partial<Request>>({
   patient_age: 0,
   patient_sexe: 'M',
   patient_pays: '',
-  source: 'Manual',
+  source: 'Website',
   text_maladies: '',
   text_allergies: '',
   text_chirurgies: '',
@@ -105,7 +111,7 @@ const [newRequest, setNewRequest] = useState<Partial<Request>>({
     FETCH API
   ------------------------------------------------------------- */
  useEffect(() => {
-  fetch("https://lepetitchaletoran.com/api/ia/requests.php")
+  fetch("https://webemtiyaz.com/api/ia/requests.php")
     .then(res => res.json())
     .then((data: any[]) => {
       const mapped: Request[] = data.map(r => ({
@@ -131,6 +137,7 @@ const [newRequest, setNewRequest] = useState<Partial<Request>>({
         utm_campaign: r.utm_campaign,
         created_at: r.created_at,
         updated_at: r.updated_at,
+        archived: r.archived,
 
         /* ======================
            PATIENT
@@ -156,19 +163,100 @@ const [newRequest, setNewRequest] = useState<Partial<Request>>({
       setRequests(mapped);
       setFilteredRequests(mapped);
       setLoading(false);
+      
+      // Charger les hôpitaux assignés pour chaque requête
+      loadAssignedHospitals(mapped);
     })
     .catch(() => setLoading(false));
 
-    fetch("https://lepetitchaletoran.com/api/ia/get_all_agents.php")
+    fetch("https://webemtiyaz.com/api/ia/get_all_agents.php")
     .then(res => res.json())
     .then(data => {
       if (data.success) setAgents(data.data);
     });
 }, []);
 
+// Fonction pour charger les hôpitaux assignés
+const loadAssignedHospitals = async (requestsList: Request[]) => {
+  try {
+    const hospitalsMap: Record<number, any[]> = {};
+    
+    // Charger les hôpitaux pour chaque requête
+    const promises = requestsList.map(async (req) => {
+      try {
+        const res = await fetch(`/api/request_hospital?id_request=${req.id_request}`);
+        if (res.ok) {
+          const hospitals = await res.json();
+          // Filtrer seulement les hôpitaux actifs (is_active = 1)
+          const activeHospitals = hospitals.filter((h: any) => h.is_active === 1);
+          
+          // Charger les détails des hôpitaux avec les prix
+          const hospitalsWithDetails = await Promise.all(
+            activeHospitals.map(async (h: any) => {
+              try {
+                // Charger les détails de l'hôpital
+                const hospitalRes = await fetch(`https://webemtiyaz.com/api/ia/hospitals.php?id=${h.id_hospital}`);
+                if (hospitalRes.ok) {
+                  const hospitalData = await hospitalRes.json();
+                  
+                  // Charger le prix de la procédure depuis procedure_hospital
+                  let prix = null;
+                  let devise = null;
+                  if (req.id_procedure) {
+                    try {
+                      const priceRes = await fetch('https://webemtiyaz.com/api/ia/procedure_hospital.php');
+                      if (priceRes.ok) {
+                        const priceText = await priceRes.text();
+                        const priceData = priceText ? JSON.parse(priceText) : [];
+                        const procedureHospital = priceData.find(
+                          (ph: any) => ph.id_hospital === h.id_hospital && ph.id_procedure === req.id_procedure && ph.is_active === 1
+                        );
+                        if (procedureHospital) {
+                          prix = procedureHospital.prix_base;
+                          devise = procedureHospital.devise;
+                        }
+                      }
+                    } catch (err) {
+                      console.error('Error loading price:', err);
+                    }
+                  }
+                  
+                  return {
+                    ...h,
+                    hospital_nom: hospitalData.nom || h.hospital_nom,
+                    hospital_ville: hospitalData.ville || h.hospital_ville,
+                    hospital_pays: hospitalData.pays || h.hospital_pays,
+                    prix_base: prix,
+                    devise: devise || 'EUR'
+                  };
+                }
+                return h;
+              } catch (err) {
+                console.error('Error loading hospital details:', err);
+                return h;
+              }
+            })
+          );
+          
+          if (hospitalsWithDetails.length > 0) {
+            hospitalsMap[req.id_request] = hospitalsWithDetails;
+          }
+        }
+      } catch (err) {
+        console.error(`Error loading hospitals for request ${req.id_request}:`, err);
+      }
+    });
+    
+    await Promise.all(promises);
+    setHospitalsByRequest(hospitalsMap);
+  } catch (err) {
+    console.error('Error loading assigned hospitals:', err);
+  }
+};
+
 // Fetch des procédures au chargement
 useEffect(() => {
-  fetch("https://lepetitchaletoran.com/api/get_procedures.php")
+  fetch("https://webemtiyaz.com/api/get_procedures.php")
     .then(res => res.json())
     .then(data => { if (data.success) setProcedures(data.data); });
 }, []);
@@ -190,7 +278,7 @@ useEffect(() => {
   const handleDelete = async (id: number) => {
     if (!confirm("Supprimer cette requête ?")) return;
 
-    await fetch("https://lepetitchaletoran.com/api/ia/requests.php", {
+    await fetch("https://webemtiyaz.com/api/ia/requests.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "delete", id_request: id })
@@ -205,9 +293,13 @@ useEffect(() => {
   const getStatusClass = (s: Request['status']) => {
     switch (s) {
       case 'New': return 'bg-blue-100 text-blue-700';
-      case 'In Progress': return 'bg-yellow-100 text-yellow-700';
-      case 'Qualified': return 'bg-purple-100 text-purple-700';
-      case 'Converted': return 'bg-green-100 text-green-700';
+      case 'affected': return 'bg-purple-100 text-purple-700';
+      case 'dispatched': return 'bg-indigo-100 text-indigo-700';
+      case 'info request': return 'bg-yellow-100 text-yellow-700';
+      case 'NI': return 'bg-orange-100 text-orange-700';
+      case 'NA': return 'bg-red-100 text-red-700';
+      case 'converted': return 'bg-green-100 text-green-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -240,17 +332,21 @@ useEffect(() => {
         <select className="border p-2 rounded" onChange={e => setFilterStatus(e.target.value)}>
           <option value="All">All Status</option>
           <option>New</option>
-          <option>In Progress</option>
-          <option>Qualified</option>
-          <option>Converted</option>
+          <option>affected</option>
+          <option>dispatched</option>
+          <option>info request</option>
+          <option>NI</option>
+          <option>NA</option>
+          <option>converted</option>
         </select>
-
         <select className="border p-2 rounded" onChange={e => setFilterAgent(e.target.value)}>
-          <option value="All">All Agents</option>
-          {[...new Set(requests.map(r => r.commercial_nom))].map(a => (
-            <option key={a}>{a}</option>
-          ))}
-        </select>
+  <option value="All">All Agents</option>
+  {[...new Set(requests.map(r => `${r.commercial_prenom} ${r.commercial_nom}`))].map(agentName => (
+    <option key={agentName} value={agentName}>
+      {agentName}
+    </option>
+  ))}
+</select>
 
         <select className="border p-2 rounded" onChange={e => setFilterSource(e.target.value)}>
           <option value="All">All Sources</option>
@@ -268,10 +364,13 @@ useEffect(() => {
               <th className="p-3 text-left">ID</th>
               <th className="p-3 text-left">Patient</th>
               <th className="p-3 text-left">Medical procedure</th>
-              <th className="p-3 text-left">Coordinator</th>
+              <th className="p-3 text-left">Agent</th>
               <th className="p-3 text-left">Hospitals Estimation</th>
               <th className="p-3 text-left">Status</th>
               <th className="p-3 text-left">Reception date</th>
+              <th className="p-3 text-left">Answered date</th>
+              
+              <th className="p-3 text-left">Coordinator</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -313,13 +412,32 @@ useEffect(() => {
 </td>
                 <td className="p-3">{r.procedure_nom}</td>
                 <td className="p-3">{r.commercial_prenom} {r.commercial_nom}</td>
-                <td className="p-3">{r.source}</td>
+                <td className="p-3">
+                  {hospitalsByRequest[r.id_request] && hospitalsByRequest[r.id_request].length > 0 ? (
+                    <div className="space-y-1">
+                      {hospitalsByRequest[r.id_request].map((h: any, idx: number) => (
+                        <div key={idx} className="text-xs">
+                          <span className="font-medium">{h.hospital_nom || h.nom || 'N/A'}</span>
+                          {h.prix_base && (
+                            <span className="text-gray-600 ml-2">
+                              {h.prix_base} {h.devise || 'EUR'}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-xs">Aucun hôpital assigné</span>
+                  )}
+                </td>
                 <td className="p-3">
                   <span className={`px-3 py-1 rounded-full text-xs ${getStatusClass(r.status)}`}>
                     {r.status}
                   </span>
                 </td>
-                <td className="p-3">{r.updated_at}</td>
+                <td className="p-3">{r.created_at}</td>
+                <td className="p-3">{r.updated_at} (update_quote)</td>
+                <td className="p-3">John doe</td>
                 <td className="p-3 text-right flex justify-end gap-3">
                 <User 
     className="cursor-pointer text-cyan-600 hover:text-cyan-800" 
@@ -332,7 +450,7 @@ useEffect(() => {
                     className="cursor-pointer text-blue-600"
                     onClick={() => { setSelectedRequest(r); setShowViewModal(true); }}
                   />
-                  <Pencil
+                  <Archive
                     className="cursor-pointer text-yellow-600"
                     onClick={() => { setEditRequest(r); setShowEditModal(true); }}
                   />
@@ -405,9 +523,12 @@ useEffect(() => {
             onChange={(e) => setNewRequest({ ...newRequest, status: e.target.value })}
           >
             <option>New</option>
-            <option>In Progress</option>
-            <option>Qualified</option>
-            <option>Converted</option>
+            <option>affected</option>
+            <option>dispatched</option>
+            <option>info request</option>
+            <option>NI</option>
+            <option>NA</option>
+            <option>converted</option>
           </select>
 
           <label className="block text-sm font-semibold mb-1">Agent</label>
@@ -612,34 +733,34 @@ useEffect(() => {
         <User className="text-cyan-600" size={20} />
         <h2 className="text-lg font-bold">Assigner un agent</h2>
       </div>
-
       <p className="text-sm text-gray-600 mb-4">
-        Patient: <span className="font-semibold">{tempAgentRequest.patient_nom}</span>
-      </p>
+  Patient: <span className="font-semibold">{`${tempAgentRequest.patient_prenom} ${tempAgentRequest.patient_nom}`}</span>
+</p>
 
       <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Choisir l'agent commercial</label>
       <select
-        className="w-full border p-2 rounded-lg bg-gray-50 focus:ring-2 focus:ring-cyan-500 outline-none"
-        value={tempAgentRequest.id_commercial || ''}
-        onChange={(e) => {
-          const val = e.target.value;
-          const selectedId = val ? Number(val) : null;
-          const agentObj = agents.find(a => Number(a.id_commercial) === selectedId);
-          
-          setTempAgentRequest({ 
-            ...tempAgentRequest, 
-            id_commercial: selectedId,
-            commercial_nom: agentObj ? agentObj.nom : '' 
-          });
-        }}
-      >
-        <option value="">-- Non assigné --</option>
-        {agents.map((agent) => (
-          <option key={agent.id_commercial} value={agent.id_commercial}>
-            {agent.nom} {agent.prenom}
-          </option>
-        ))}
-      </select>
+  className="w-full border p-2 rounded-lg bg-gray-50 focus:ring-2 focus:ring-cyan-500 outline-none"
+  value={tempAgentRequest.id_commercial || ''}
+  onChange={(e) => {
+    const selectedId = e.target.value ? Number(e.target.value) : null;
+    const agentObj = agents.find(a => Number(a.id_commercial) === selectedId);
+    
+    // On prépare l'objet complet pour que le tableau se mette à jour instantanément
+    setTempAgentRequest({ 
+      ...tempAgentRequest, 
+      id_commercial: selectedId,
+      commercial_nom: agentObj ? agentObj.nom : '',
+      commercial_prenom: agentObj ? agentObj.prenom : '' 
+    });
+  }}
+>
+  <option value="">-- Non assigné --</option>
+  {agents.map((agent) => (
+    <option key={agent.id_commercial} value={agent.id_commercial}>
+      {agent.nom} {agent.prenom}
+    </option>
+  ))}
+</select>
 
       <div className="flex justify-end gap-2 mt-6">
         <button 
@@ -659,7 +780,8 @@ useEffect(() => {
                   action: 'update',
                   id_request: tempAgentRequest.id_request,
                   id_patient: tempAgentRequest.patient_id,
-                  id_commercial: tempAgentRequest.id_commercial
+                  id_commercial: tempAgentRequest.id_commercial,
+                  status: 'affected'
                 }),
               });
               const result = await res.json();
@@ -680,270 +802,100 @@ useEffect(() => {
   </div>
 )}
 
-
-{/* EDIT MODAL */}
+{/* ARCHIVE MODAL */}
 {showEditModal && editRequest && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded-xl w-full max-w-xl relative">
-      <X
-        className="absolute top-4 right-4 cursor-pointer"
-        onClick={() => setShowEditModal(false)}
-      />
-      <h2 className="text-xl font-bold mb-4">Modifier la requête #{editRequest.id_request}</h2>
-
-      {/* TABS */}
-      <div className="flex gap-2 mb-4">
-        <button
-          className={`px-3 py-1 rounded ${activeTab === 'general' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
-          onClick={() => setActiveTab('general')}
-        >
-          General
-        </button>
-        <button
-          className={`px-3 py-1 rounded ${activeTab === 'patient' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
-          onClick={() => setActiveTab('patient')}
-        >
-          Patient
-        </button>
-        <button
-          className={`px-3 py-1 rounded ${activeTab === 'medical' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
-          onClick={() => setActiveTab('medical')}
-        >
-          Medical
-        </button>
+  <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+      
+      {/* Header */}
+      <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-yellow-50/50">
+        <div className="flex items-center gap-3">
+          <div className="bg-yellow-100 p-2 rounded-lg">
+            <Archive className="text-yellow-700" size={24} />
+          </div>
+          <h2 className="text-xl font-black text-gray-800 uppercase tracking-tight">
+            Archiver la requête
+          </h2>
+        </div>
+        <X
+          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+          onClick={() => setShowEditModal(false)}
+        />
       </div>
 
-      {/* TAB CONTENT */}
-      {activeTab === 'general' && (
-        <>
-          <label className="block text-sm font-semibold mb-1">Status</label>
+      <div className="p-8">
+        <p className="text-gray-600 mb-6 font-medium text-center">
+          Voulez-vous archiver la demande de <br/>
+          <span className="text-gray-900 font-bold text-lg">
+            {editRequest.patient_nom} {editRequest.patient_prenom}
+          </span>?
+        </p>
+
+        {/* Sélection du statut avant archivage */}
+        <div className="bg-gray-50 p-5 rounded-2xl mb-8 border border-gray-100">
+          <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest text-center">
+            Statut de clôture
+          </label>
           <select
-            className="w-full border p-2 mb-2"
+            className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-yellow-500 shadow-sm appearance-none text-center cursor-pointer"
             value={editRequest.status}
             onChange={(e) => setEditRequest({ ...editRequest, status: e.target.value })}
           >
-            <option>New</option>
-            <option>In Progress</option>
-            <option>Qualified</option>
-            <option>Converted</option>
+            <option value="NI">NI (Non Intéressé)</option>
+            <option value="NA">NA (Non Abouti)</option>
+            <option value="converted">Converted (Succès)</option>
+            <option value="info request">Info Request</option>
           </select>
+        </div>
 
-    <label className="block text-sm font-semibold mb-1">Agent</label>
-<select
-  className="w-full border p-2 mb-2"
-  value={editRequest.id_commercial || ''}
-  onChange={(e) => {
-    const val = e.target.value;
-    const selectedId = val ? Number(val) : null;
-    const agentObj = agents.find(a => Number(a.id_commercial) === selectedId);
-    
-    setEditRequest({ 
-      ...editRequest, 
-      id_commercial: selectedId,
-      commercial_nom: agentObj ? agentObj.nom : '' 
-    });
-  }}
->
-  <option value="">-- Sélectionner un agent --</option>
-  {agents.map((agent) => (
-    <option key={agent.id_commercial} value={agent.id_commercial}>
-      {agent.nom} {agent.prenom}
-    </option>
-  ))}
-</select>
+        {/* ACTIONS */}
+        <div className="flex flex-col gap-3">
+          <button
+            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black hover:bg-black shadow-lg transition-all uppercase tracking-widest text-sm"
+            onClick={async () => {
+              if (!editRequest.id_request || !editRequest.patient_id) {
+                alert("Erreur: Données d'identification manquantes.");
+                return;
+              }
 
-          <label className="block text-sm font-semibold mb-1">Source</label>
-          <input
-            className="w-full border p-2 mb-2"
-            value={editRequest.source || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, source: e.target.value })}
-          />
+              try {
+                // Envoi de l'état archivé à l'API
+                const res = await fetch('/api/update-request', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'update',
+                    id_request: editRequest.id_request,
+                    id_patient: editRequest.patient_id,
+                    archived: 1, // On passe à l'état archivé
+                    status: editRequest.status
+                  }),
+                });
 
-          <label className="block text-sm font-semibold mb-1">Langue</label>
-          <input
-            className="w-full border p-2 mb-2"
-            value={editRequest.langue || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, langue: e.target.value })}
-          />
-        </>
-      )}
+                const result = await res.json();
 
-      {activeTab === 'patient' && (
-        <>
-          <label className="block text-sm font-semibold mb-1">Nom</label>
-          <input
-            className="w-full border p-2 mb-2"
-            value={editRequest.patient_nom}
-            onChange={(e) => setEditRequest({ ...editRequest, patient_nom: e.target.value })}
-          />
-
-          <label className="block text-sm font-semibold mb-1">Prénom</label>
-          <input
-            className="w-full border p-2 mb-2"
-            value={editRequest.patient_prenom}
-            onChange={(e) => setEditRequest({ ...editRequest, patient_prenom: e.target.value })}
-          />
-
-          <label className="block text-sm font-semibold mb-1">Email</label>
-          <input
-            className="w-full border p-2 mb-2"
-            value={editRequest.patient_email || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, patient_email: e.target.value })}
-          />
-
-          <label className="block text-sm font-semibold mb-1">Téléphone</label>
-          <input
-            className="w-full border p-2 mb-2"
-            value={editRequest.patient_tel || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, patient_tel: e.target.value })}
-          />
-
-          <label className="block text-sm font-semibold mb-1">Âge</label>
-          <input
-            type="number"
-            className="w-full border p-2 mb-2"
-            value={editRequest.patient_age || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, patient_age: Number(e.target.value) })}
-          />
-
-          <label className="block text-sm font-semibold mb-1">Sexe</label>
-          <select
-            className="w-full border p-2 mb-2"
-            value={editRequest.patient_sexe || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, patient_sexe: e.target.value as 'M' | 'F' | 'Autre' })}
+                if (result.success) {
+                  // On filtre la liste locale pour faire disparaître la ligne
+                  setRequests((prev) => prev.filter((r) => r.id_request !== editRequest.id_request));
+                  setShowEditModal(false);
+                } else {
+                  alert("Erreur API : " + result.error);
+                }
+              } catch (err) {
+                alert("Impossible de contacter l'API.");
+              }
+            }}
           >
-            <option value="">Sélectionner</option>
-            <option value="M">M</option>
-            <option value="F">F</option>
-            
-          </select>
-
-          <label className="block text-sm font-semibold mb-1">Pays</label>
-          <input
-            className="w-full border p-2 mb-2"
-            value={editRequest.patient_pays || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, patient_pays: e.target.value })}
-          />
-        </>
-      )}
-
-      {activeTab === 'medical' && (
-        <>
-          <label className="block text-sm font-semibold mb-1">Maladies</label>
-          <textarea
-            className="w-full border p-2 mb-2"
-            value={editRequest.text_maladies || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, text_maladies: e.target.value })}
-          />
-
-          <label className="block text-sm font-semibold mb-1">Allergies</label>
-          <textarea
-            className="w-full border p-2 mb-2"
-            value={editRequest.text_allergies || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, text_allergies: e.target.value })}
-          />
-
-          <label className="block text-sm font-semibold mb-1">Chirurgies</label>
-          <textarea
-            className="w-full border p-2 mb-2"
-            value={editRequest.text_chirurgies || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, text_chirurgies: e.target.value })}
-          />
-
-          <label className="block text-sm font-semibold mb-1">Médicaments</label>
-          <textarea
-            className="w-full border p-2 mb-2"
-            value={editRequest.text_medicaments || ''}
-            onChange={(e) => setEditRequest({ ...editRequest, text_medicaments: e.target.value })}
-          />
-        </>
-      )}
-
-      {/* ACTIONS */}
-      <div className="flex justify-end gap-3 mt-4">
-        
-        <button
-          className="px-4 py-2 border rounded"
-          onClick={() => setShowEditModal(false)}
-        >
-          Annuler
-        </button>
-        
-<button
-  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-  onClick={async () => {
-    if (!editRequest) return;
-    
-
-    try {
-      // On prépare le payload structuré exactement comme le PHP l'attend
-      const payload = {
-        action: 'update',
-        id_request: editRequest.id_request,
-        id_patient: editRequest.patient_id, // L'ID nécessaire pour la clause WHERE en PHP
-        
-        // Champs pour la table 'requests'
-        status: editRequest.status,
-        id_commercial: editRequest.id_commercial,
-        source: editRequest.source,
-        langue: editRequest.langue,
-        message_patient: editRequest.message_patient,
-        text_maladies: editRequest.text_maladies,
-        text_allergies: editRequest.text_allergies,
-        text_chirurgies: editRequest.text_chirurgies,
-        text_medicaments: editRequest.text_medicaments,
-
-        // Champs pour la table 'patients' (Objet imbriqué pour le if(isset($data['patient'])) du PHP)
-        patient: {
-          nom: editRequest.patient_nom,
-          prenom: editRequest.patient_prenom,
-          email: editRequest.patient_email,
-          numero_tel: editRequest.patient_tel,
-          age: editRequest.patient_age,
-          sexe: editRequest.patient_sexe,
-          pays: editRequest.patient_pays,
-          //poids: editRequest.patient_poids,
-          //taille: editRequest.patient_taille,
-          //smoker: editRequest.patient_smoker,
-          //imc: editRequest.patient_imc
-        }
-      };
-
-      console.log("Données envoyées au PHP :", payload);
-
-      const res = await fetch('/api/update-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await res.json();
-      console.log("Réponse de l'API :", result);
-
-      if (result.success) {
-        // Mise à jour de la liste locale pour éviter de recharger la page
-        setRequests((prev) =>
-          prev.map((r) => (r.id_request === editRequest.id_request ? { ...r, ...editRequest } : r))
-        );
-        setShowEditModal(false);
-        alert("Mise à jour effectuée avec succès !");
-      } else {
-        alert("Erreur API : " + result.error);
-      }
-
-    } catch (err) {
-      console.error("Erreur réseau ou syntaxe :", err);
-      alert("Impossible de contacter l'API.");
-    }
-  }}
->
-  Enregistrer
-</button>
-
-
-
-
-
+            OUI, ARCHIVER
+          </button>
+          
+          <button
+            className="w-full py-4 bg-white border border-gray-200 text-gray-500 rounded-2xl font-bold hover:bg-gray-50 transition-all uppercase tracking-widest text-xs"
+            onClick={() => setShowEditModal(false)}
+          >
+            NON, ANNULER
+          </button>
+        </div>
       </div>
     </div>
   </div>

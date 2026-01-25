@@ -49,12 +49,16 @@ if ($method === 'GET') {
 
                 -- COMMERCIAL
                 sa.nom              AS commercial_nom,
-                sa.prenom           AS commercial_prenom
+                sa.prenom           AS commercial_prenom,
+
+                -- CASE MANAGER
+                hc.nom_coordi       AS case_manager_nom
 
             FROM requests r
             LEFT JOIN patients p ON r.id_patient = p.id_patient
             LEFT JOIN medical_procedures mp ON r.id_procedure = mp.id_procedure
             LEFT JOIN sales_agents sa ON r.id_commercial = sa.id_commercial
+            LEFT JOIN hospital_coordinators hc ON r.id_coordination = hc.id_coordi
 
             WHERE r.id_request = ?
         ");
@@ -82,12 +86,15 @@ if ($method === 'GET') {
             mp.nom_procedure    AS procedure_nom,
 
             sa.nom              AS commercial_nom,
-            sa.prenom           AS commercial_prenom
+            sa.prenom           AS commercial_prenom,
+
+            hc.nom_coordi       AS case_manager_nom
 
         FROM requests r
         LEFT JOIN patients p ON r.id_patient = p.id_patient
         LEFT JOIN medical_procedures mp ON r.id_procedure = mp.id_procedure
         LEFT JOIN sales_agents sa ON r.id_commercial = sa.id_commercial
+        LEFT JOIN hospital_coordinators hc ON r.id_coordination = hc.id_coordi
 
         ORDER BY r.created_at DESC
     ");

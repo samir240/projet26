@@ -52,7 +52,7 @@ export default function SalesAgentsPage() {
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
 
   const API_URL = '/api/sales-agents';
-  const PHOTO_BASE_URL = 'https://lepetitchaletoran.com/api/ia/photos_agents/';
+  const PHOTO_BASE_URL = 'https://webemtiyaz.com/api/ia/photos_agents/';
 
   /* -------------------------------------------------------------
     FETCH API

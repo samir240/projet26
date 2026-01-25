@@ -1,30 +1,32 @@
 import { NextResponse } from 'next/server';
 
-const PHP_URL = 'https://webemtiyaz.com/api/ia/manage_email_templates.php';
+const PHP_API_URL = 'https://webemtiyaz.com/api/ia/medical_procedures.php';
 
-// Récupérer la liste (Appelé par fetch('/api/email_templates'))
+// GET : Récupérer toutes les procédures
 export async function GET() {
   try {
-    const res = await fetch(PHP_URL, { cache: 'no-store' });
+    const res = await fetch(PHP_API_URL, { cache: 'no-store' });
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Erreur de connexion au serveur" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de la récupération" }, { status: 500 });
   }
 }
 
-// Créer ou Modifier
+// POST : Créer, Modifier ou Supprimer
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const res = await fetch(PHP_URL, {
+
+    const res = await fetch(PHP_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
+
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Erreur de transmission" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de l'opération" }, { status: 500 });
   }
 }

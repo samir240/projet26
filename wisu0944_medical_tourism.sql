@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jan 03, 2026 at 10:27 AM
+-- Generation Time: Jan 11, 2026 at 11:28 AM
 -- Server version: 11.4.9-MariaDB
 -- PHP Version: 8.3.29
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `kubi8227_medical_tourism`
+-- Database: `wisu0944_medical_tourism`
 --
 
 -- --------------------------------------------------------
@@ -63,6 +63,13 @@ CREATE TABLE `case_managers` (
   `created_at` timestamp NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `case_managers`
+--
+
+INSERT INTO `case_managers` (`id_case_manager`, `id_hospital`, `fullname`, `email`, `phone`, `profile_photo`, `countries_concerned`, `id_coordinator`, `is_active`, `created_at`) VALUES
+(1, 2, 'samir bensalah', 'samir@gmail.com', '054374745', NULL, 'Égypte', NULL, 1, '2026-01-03 10:18:35');
+
 -- --------------------------------------------------------
 
 --
@@ -88,6 +95,36 @@ CREATE TABLE `doctors` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `doctors`
+--
+
+INSERT INTO `doctors` (`id_medecin`, `id_hospital`, `nom_medecin`, `photo`, `cv`, `specialite`, `langues`, `description`, `note`, `reviews`, `sexe`, `nationalite`, `email`, `telephone`, `is_active`, `created_at`, `updated_at`) VALUES
+(2, 2, 'zat zat', 'uploads/hospital_2/doctors/doc_2_pic_1767436356.jpg', 'uploads/hospital_2/doctors/doc_2_cv_1767436356.pdf', NULL, 'English,Arabic,French', NULL, 0.00, '0', NULL, NULL, NULL, NULL, 1, '2026-01-03 10:32:35', '2026-01-03 10:32:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `email_templates`
+--
+
+CREATE TABLE `email_templates` (
+  `id_template` int(11) NOT NULL,
+  `slug` varchar(50) NOT NULL,
+  `langue` char(2) NOT NULL,
+  `objet` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `email_templates`
+--
+
+INSERT INTO `email_templates` (`id_template`, `slug`, `langue`, `objet`, `message`, `description`, `created_at`) VALUES
+(1, 'test_fr', 'fr', 'test objet', 'bla bla bla', '', '2026-01-04 17:49:32');
 
 -- --------------------------------------------------------
 
@@ -220,6 +257,13 @@ CREATE TABLE `hotels` (
   `created_at` timestamp NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `hotels`
+--
+
+INSERT INTO `hotels` (`id_hotel`, `id_hospital`, `hotel_name`, `stars`, `adresse`, `hotel_website`, `single_room_price`, `double_room_price`, `photo`, `is_active`, `created_at`) VALUES
+(2, 2, 'ibis Hotel', 3, 'rue ibis', 'http://', 100.00, 150.00, NULL, 1, '2026-01-03 10:05:30');
+
 -- --------------------------------------------------------
 
 --
@@ -245,8 +289,8 @@ CREATE TABLE `medical_procedures` (
 
 INSERT INTO `medical_procedures` (`id_procedure`, `nom_procedure`, `categorie`, `sous_categorie`, `description`, `img_procedure`, `duree_moyenne`, `is_active`, `created_at`, `updated_at`) VALUES
 (1, 'Liposuccion Abdominale', 'Chirurgie Esthétique', 'Corps', 'Procédure visant à retirer l’excès de graisse au niveau du ventre tout en remodelant la silhouette.', 'liposuccion_abdomen.jpg', '2h', 1, '2025-12-10 09:58:28', '2025-12-10 09:58:28'),
-(2, 'Implants Dentaires', 'Dentisterie', 'Implants', 'Pose d’un implant dentaire en titane pour remplacer une dent manquante avec une solution durable.', 'implant_dentaire.jpg', '1h30', 1, '2025-12-10 09:58:28', '2025-12-10 09:58:28'),
-(3, 'Rhinoplastie', 'Chirurgie Esthétique', 'Visage', 'Intervention chirurgicale permettant de corriger la forme du nez pour un résultat harmonieux.', 'rhinoplastie.jpg', '3h', 1, '2025-12-10 09:58:28', '2025-12-10 09:58:28');
+(2, 'Implants Dentaires', 'Dentisterie', 'Implants', 'Pose d’un implant dentaire en titane pour remplacer une dent manquante avec une solution durable.', 'implant_dentaire.jpg', '1h30', 1, '2025-12-10 09:58:28', '2026-01-07 12:40:46'),
+(3, 'Rhinoplastie', 'Chirurgie Esthétique', 'Visage', 'Intervention chirurgicale permettant de corriger la forme du nez pour un résultat harmonieux.', 'rhinoplastie.jpg', '4h', 1, '2025-12-10 09:58:28', '2026-01-07 12:40:56');
 
 -- --------------------------------------------------------
 
@@ -295,7 +339,9 @@ CREATE TABLE `patients` (
 
 INSERT INTO `patients` (`id_patient`, `numero_tel`, `email`, `nom`, `prenom`, `langue`, `ip_adresse`, `age`, `sexe`, `pays`, `poids`, `taille`, `smoker`, `imc`, `created_at`, `updated_at`) VALUES
 (1, '054565656', 'example@gmail.com', 'Grabara', 'luca', 'fr', '41.97.163.76', 31, 'M', 'Algerie', NULL, NULL, 0, NULL, '2025-12-11 10:11:10', '2025-12-23 19:25:47'),
-(2, NULL, 'abderrezak.merz@gmail.com', 'Zikou', 'blanco', 'fr', '54.172.56.37', NULL, 'M', 'Brazil', 90.00, 210.00, 0, 123.00, '2025-12-25 09:23:59', '2025-12-30 15:38:37');
+(2, NULL, 'abderrezak.merz@gmail.com', 'Zikou', 'blanco', 'fr', '54.172.56.37', NULL, 'M', 'Brazil', 90.00, 210.00, 0, 123.00, '2025-12-25 09:23:59', '2025-12-30 15:38:37'),
+(3, '0445464878', 'mill64@gmail.com', 'Miller', 'Thoma', 'fr', NULL, 24, 'M', 'FR', 90.00, NULL, 0, NULL, '2026-01-04 16:45:56', '2026-01-07 13:46:15'),
+(4, '', 'ben@gmail.com', 'sam', 'bem', 'fr', NULL, 38, 'M', '', NULL, NULL, 0, NULL, '2026-01-05 09:59:18', '2026-01-05 10:38:12');
 
 -- --------------------------------------------------------
 
@@ -378,7 +424,8 @@ CREATE TABLE `quotes` (
   `date_validite` date DEFAULT NULL,
   `date_envoi` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `num_quote` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -393,12 +440,19 @@ CREATE TABLE `relances` (
   `id_commercial` int(11) DEFAULT NULL,
   `date_relance` datetime NOT NULL,
   `objet` varchar(255) DEFAULT NULL,
-  `type_relance` enum('email','telephone','whatsapp','sms','autre') DEFAULT 'email',
-  `status` enum('planifie','effectue','annule') DEFAULT 'planifie',
+  `type_relance` enum('auto','manual','') DEFAULT '',
+  `status` enum('new','done','canceled') DEFAULT 'new',
   `notes` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `relances`
+--
+
+INSERT INTO `relances` (`id_relance`, `id_request`, `id_commercial`, `date_relance`, `objet`, `type_relance`, `status`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 9, 17, '2026-01-10 00:00:00', 'Attente confirmation', 'manual', 'done', 'test', '2026-01-09 14:54:36', '2026-01-09 14:55:10');
 
 -- --------------------------------------------------------
 
@@ -414,7 +468,7 @@ CREATE TABLE `requests` (
   `id_galerie` int(11) DEFAULT NULL,
   `langue` varchar(50) DEFAULT NULL,
   `message_patient` text DEFAULT NULL,
-  `status` enum('nouveau','en_cours','converti','perdu','annule','Qualified') DEFAULT 'nouveau',
+  `status` enum('New','affected','dispatched','info request','NI','NA','converted') DEFAULT 'New',
   `text_maladies` text DEFAULT NULL,
   `text_allergies` text DEFAULT NULL,
   `text_chirurgies` text DEFAULT NULL,
@@ -425,21 +479,24 @@ CREATE TABLE `requests` (
   `utm_medium` varchar(100) DEFAULT NULL,
   `utm_campaign` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `archived` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `requests`
 --
 
-INSERT INTO `requests` (`id_request`, `id_patient`, `id_procedure`, `id_commercial`, `id_galerie`, `langue`, `message_patient`, `status`, `text_maladies`, `text_allergies`, `text_chirurgies`, `text_medicaments`, `id_coordi`, `source`, `utm_source`, `utm_medium`, `utm_campaign`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, NULL, NULL, 'fr', NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 10:11:10', '2025-12-16 15:28:38'),
-(2, 1, 2, NULL, NULL, 'fr', NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 10:14:10', '2025-12-16 15:28:44'),
-(3, 1, 3, 4, NULL, 'eng', NULL, 'Qualified', 'Diabète', 'Aucune', 'Appendicectomie', 'Paracétamol, cachiattt', NULL, 'Website', NULL, NULL, NULL, '2025-12-11 10:24:42', '2025-12-23 10:54:11'),
-(4, 1, 2, 16, NULL, 'fr', NULL, 'Qualified', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 11:24:15', '2025-12-23 10:58:08'),
-(5, 1, 1, 16, NULL, 'de', NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 11:28:11', '2025-12-22 17:37:37'),
-(6, 1, 3, 4, NULL, NULL, NULL, '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-22 14:54:18', '2025-12-22 17:24:34'),
-(7, 2, 1, 16, NULL, NULL, NULL, 'Qualified', NULL, NULL, 'test chirg', NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-25 09:23:59', '2025-12-31 14:37:28');
+INSERT INTO `requests` (`id_request`, `id_patient`, `id_procedure`, `id_commercial`, `id_galerie`, `langue`, `message_patient`, `status`, `text_maladies`, `text_allergies`, `text_chirurgies`, `text_medicaments`, `id_coordi`, `source`, `utm_source`, `utm_medium`, `utm_campaign`, `created_at`, `updated_at`, `archived`) VALUES
+(1, 1, 2, 17, NULL, 'fr', NULL, 'info request', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 10:11:10', '2026-01-07 11:49:47', 0),
+(2, 1, 2, 17, NULL, 'fr', NULL, 'affected', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 10:14:10', '2026-01-07 12:10:15', 0),
+(3, 1, 3, 4, NULL, 'eng', NULL, 'affected', 'Diabète', 'Aucune', 'Appendicectomie', 'Paracétamol, cachiattt', NULL, 'Website', NULL, NULL, NULL, '2025-12-11 10:24:42', '2026-01-07 12:10:55', 0),
+(4, 1, 2, 4, NULL, 'fr', NULL, 'affected', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 11:24:15', '2026-01-07 12:07:00', 0),
+(5, 1, 1, 4, NULL, 'de', NULL, 'converted', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-11 11:28:11', '2026-01-07 11:50:44', 0),
+(6, 1, 3, 4, NULL, NULL, NULL, 'NI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-22 14:54:18', '2026-01-07 14:02:46', 0),
+(7, 2, 1, 16, NULL, NULL, NULL, 'dispatched', NULL, NULL, 'test chirg', NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-25 09:23:59', '2026-01-05 13:48:23', 0),
+(8, 3, 3, 16, NULL, 'fr', NULL, 'dispatched', '', '', '', '', NULL, 'Manual', NULL, NULL, NULL, '2026-01-04 16:45:56', '2026-01-05 11:31:21', 0),
+(9, 4, 1, 17, NULL, 'fr', 'test affichage du message patient bla bla bla ', 'dispatched', '', '', '', '', NULL, 'Manual', NULL, NULL, NULL, '2026-01-05 09:59:18', '2026-01-05 11:52:37', 0);
 
 -- --------------------------------------------------------
 
@@ -462,7 +519,12 @@ CREATE TABLE `request_hospital` (
 
 INSERT INTO `request_hospital` (`id_relation`, `id_request`, `id_hospital`, `is_active`, `created_at`, `updated_at`) VALUES
 (23, 7, 5, 0, '2025-12-31 14:05:16', '2026-01-02 15:33:21'),
-(24, 7, 4, 0, '2025-12-31 14:05:16', '2026-01-02 15:33:23');
+(24, 7, 4, 0, '2025-12-31 14:05:16', '2026-01-02 15:33:23'),
+(25, 9, 2, 1, '2026-01-05 11:25:27', '2026-01-05 11:25:49'),
+(26, 8, 1, 1, '2026-01-05 11:31:21', '2026-01-05 11:31:21'),
+(27, 9, 3, 1, '2026-01-05 11:52:37', '2026-01-05 11:52:37'),
+(28, 7, 3, 1, '2026-01-05 13:48:23', '2026-01-05 13:48:23'),
+(29, 6, 1, 1, '2026-01-07 13:53:23', '2026-01-07 13:53:23');
 
 -- --------------------------------------------------------
 
@@ -516,8 +578,9 @@ CREATE TABLE `sales_agents` (
 --
 
 INSERT INTO `sales_agents` (`id_commercial`, `id_user`, `nom`, `prenom`, `photo`, `email`, `telephone`, `langue`, `note`, `is_active`, `created_at`, `updated_at`) VALUES
-(4, 1, 'Test', 'Samir Modifié2', 'https://example.com/photo.jpg', 'test.agent@example.com', '0700000000', 'fr', 'Agent de test', 1, '2025-12-12 09:26:21', '2025-12-14 09:03:06'),
-(16, 1, 'hadad', 'noura', NULL, '', NULL, NULL, NULL, 1, '2025-12-22 17:37:18', '2025-12-22 17:37:18');
+(4, 1, 'bensalah', 'Samir ', 'agent_695a9f990927f.jpeg', 'test.agent@example.com', '0700000000', 'fr', 'Agent de test', 1, '2025-12-12 09:26:21', '2026-01-04 17:12:57'),
+(16, 1, 'hadad', 'noura', NULL, '', NULL, NULL, NULL, 1, '2025-12-22 17:37:18', '2025-12-22 17:37:18'),
+(17, NULL, 'andres', 'viro', 'agent_695a9ff0f0bac.webp', 'viro@gmail.com', '', 'fr', '', 1, '2026-01-04 17:14:24', '2026-01-04 17:14:24');
 
 -- --------------------------------------------------------
 
@@ -571,81 +634,63 @@ INSERT INTO `users` (`id_user`, `id_role`, `username`, `email`, `password`, `nom
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `v_pending_relances`
--- (See below for the actual view)
+-- Table structure for table `v_quote_summary`
 --
-CREATE TABLE `v_pending_relances` (
-`id_relance` int(11)
-,`date_relance` datetime
-,`objet` varchar(255)
-,`type_relance` enum('email','telephone','whatsapp','sms','autre')
-,`id_request` int(11)
-,`patient_nom` varchar(100)
-,`patient_prenom` varchar(100)
-,`patient_email` varchar(255)
-,`agent_nom` varchar(100)
-);
 
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `v_quote_summary`
--- (See below for the actual view)
---
 CREATE TABLE `v_quote_summary` (
-`id_quote` int(11)
-,`numero_devis` varchar(50)
-,`prix_total` decimal(12,2)
-,`devise` varchar(10)
-,`status` enum('brouillon','envoye','accepte','refuse','expire')
-,`created_at` timestamp
-,`patient_nom` varchar(100)
-,`patient_prenom` varchar(100)
-,`hospital_nom` varchar(255)
-,`hospital_pays` varchar(100)
-,`nom_medecin` varchar(150)
-,`agent_nom` varchar(100)
-);
+  `id_quote` int(11) DEFAULT NULL,
+  `numero_devis` varchar(50) DEFAULT NULL,
+  `prix_total` decimal(12,2) DEFAULT NULL,
+  `devise` varchar(10) DEFAULT NULL,
+  `status` enum('brouillon','envoye','accepte','refuse','expire') DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `patient_nom` varchar(100) DEFAULT NULL,
+  `patient_prenom` varchar(100) DEFAULT NULL,
+  `hospital_nom` varchar(255) DEFAULT NULL,
+  `hospital_pays` varchar(100) DEFAULT NULL,
+  `nom_medecin` varchar(150) DEFAULT NULL,
+  `agent_nom` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `v_request_summary`
--- (See below for the actual view)
+-- Table structure for table `v_request_summary`
 --
+
 CREATE TABLE `v_request_summary` (
-`id_request` int(11)
-,`status` enum('nouveau','en_cours','converti','perdu','annule','Qualified')
-,`created_at` timestamp
-,`patient_nom` varchar(100)
-,`patient_prenom` varchar(100)
-,`patient_email` varchar(255)
-,`patient_pays` varchar(100)
-,`nom_procedure` varchar(255)
-,`procedure_categorie` varchar(100)
-,`agent_nom` varchar(100)
-,`agent_email` varchar(255)
-);
+  `id_request` int(11) DEFAULT NULL,
+  `status` enum('New','affected','dispatched','info request','NI','NA','converted') DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `patient_nom` varchar(100) DEFAULT NULL,
+  `patient_prenom` varchar(100) DEFAULT NULL,
+  `patient_email` varchar(255) DEFAULT NULL,
+  `patient_pays` varchar(100) DEFAULT NULL,
+  `nom_procedure` varchar(255) DEFAULT NULL,
+  `procedure_categorie` varchar(100) DEFAULT NULL,
+  `agent_nom` varchar(100) DEFAULT NULL,
+  `agent_email` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `v_upcoming_appointments`
--- (See below for the actual view)
+-- Table structure for table `v_upcoming_appointments`
 --
+
 CREATE TABLE `v_upcoming_appointments` (
-`id_appointment` int(11)
-,`date_arrivee` date
-,`date_depart` date
-,`status` enum('planifie','confirme','en_cours','termine','annule','no_show')
-,`patient_nom` varchar(100)
-,`patient_prenom` varchar(100)
-,`patient_email` varchar(255)
-,`hospital_nom` varchar(255)
-,`hospital_ville` varchar(100)
-,`prix_total` decimal(12,2)
-,`devise` varchar(10)
-);
+  `id_appointment` int(11) DEFAULT NULL,
+  `date_arrivee` date DEFAULT NULL,
+  `date_depart` date DEFAULT NULL,
+  `status` enum('planifie','confirme','en_cours','termine','annule','no_show') DEFAULT NULL,
+  `patient_nom` varchar(100) DEFAULT NULL,
+  `patient_prenom` varchar(100) DEFAULT NULL,
+  `patient_email` varchar(255) DEFAULT NULL,
+  `hospital_nom` varchar(255) DEFAULT NULL,
+  `hospital_ville` varchar(100) DEFAULT NULL,
+  `prix_total` decimal(12,2) DEFAULT NULL,
+  `devise` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Indexes for dumped tables
@@ -678,6 +723,13 @@ ALTER TABLE `doctors`
   ADD KEY `idx_hospital` (`id_hospital`),
   ADD KEY `idx_nom` (`nom_medecin`),
   ADD KEY `idx_specialite` (`specialite`);
+
+--
+-- Indexes for table `email_templates`
+--
+ALTER TABLE `email_templates`
+  ADD PRIMARY KEY (`id_template`),
+  ADD UNIQUE KEY `unique_slug_langue` (`slug`,`langue`);
 
 --
 -- Indexes for table `galerie_patient`
@@ -859,13 +911,19 @@ ALTER TABLE `appointments`
 -- AUTO_INCREMENT for table `case_managers`
 --
 ALTER TABLE `case_managers`
-  MODIFY `id_case_manager` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_case_manager` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `doctors`
 --
 ALTER TABLE `doctors`
-  MODIFY `id_medecin` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_medecin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `email_templates`
+--
+ALTER TABLE `email_templates`
+  MODIFY `id_template` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `galerie_patient`
@@ -901,7 +959,7 @@ ALTER TABLE `hospital_media`
 -- AUTO_INCREMENT for table `hotels`
 --
 ALTER TABLE `hotels`
-  MODIFY `id_hotel` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_hotel` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `medical_procedures`
@@ -919,7 +977,7 @@ ALTER TABLE `notes`
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `id_patient` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_patient` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `procedure_hospital`
@@ -937,19 +995,19 @@ ALTER TABLE `quotes`
 -- AUTO_INCREMENT for table `relances`
 --
 ALTER TABLE `relances`
-  MODIFY `id_relance` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_relance` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `requests`
 --
 ALTER TABLE `requests`
-  MODIFY `id_request` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_request` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `request_hospital`
 --
 ALTER TABLE `request_hospital`
-  MODIFY `id_relation` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id_relation` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -961,7 +1019,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `sales_agents`
 --
 ALTER TABLE `sales_agents`
-  MODIFY `id_commercial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id_commercial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -974,145 +1032,6 @@ ALTER TABLE `services`
 --
 ALTER TABLE `users`
   MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
--- --------------------------------------------------------
-
---
--- Structure for view `v_pending_relances`
---
-DROP TABLE IF EXISTS `v_pending_relances`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`kubi8227`@`localhost` SQL SECURITY DEFINER VIEW `v_pending_relances`  AS SELECT `rel`.`id_relance` AS `id_relance`, `rel`.`date_relance` AS `date_relance`, `rel`.`objet` AS `objet`, `rel`.`type_relance` AS `type_relance`, `r`.`id_request` AS `id_request`, `p`.`nom` AS `patient_nom`, `p`.`prenom` AS `patient_prenom`, `p`.`email` AS `patient_email`, `sa`.`nom` AS `agent_nom` FROM (((`relances` `rel` left join `requests` `r` on(`rel`.`id_request` = `r`.`id_request`)) left join `patients` `p` on(`r`.`id_patient` = `p`.`id_patient`)) left join `sales_agents` `sa` on(`rel`.`id_commercial` = `sa`.`id_commercial`)) WHERE `rel`.`status` = 'planifie' AND `rel`.`date_relance` >= current_timestamp() ORDER BY `rel`.`date_relance` ASC ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `v_quote_summary`
---
-DROP TABLE IF EXISTS `v_quote_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`kubi8227`@`localhost` SQL SECURITY DEFINER VIEW `v_quote_summary`  AS SELECT `q`.`id_quote` AS `id_quote`, `q`.`numero_devis` AS `numero_devis`, `q`.`prix_total` AS `prix_total`, `q`.`devise` AS `devise`, `q`.`status` AS `status`, `q`.`created_at` AS `created_at`, `p`.`nom` AS `patient_nom`, `p`.`prenom` AS `patient_prenom`, `h`.`nom` AS `hospital_nom`, `h`.`pays` AS `hospital_pays`, `d`.`nom_medecin` AS `nom_medecin`, `sa`.`nom` AS `agent_nom` FROM ((((`quotes` `q` left join `patients` `p` on(`q`.`id_patient` = `p`.`id_patient`)) left join `hospitals` `h` on(`q`.`id_hospital` = `h`.`id_hospital`)) left join `doctors` `d` on(`q`.`id_medecin` = `d`.`id_medecin`)) left join `sales_agents` `sa` on(`q`.`id_commercial` = `sa`.`id_commercial`)) ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `v_request_summary`
---
-DROP TABLE IF EXISTS `v_request_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`kubi8227`@`localhost` SQL SECURITY DEFINER VIEW `v_request_summary`  AS SELECT `r`.`id_request` AS `id_request`, `r`.`status` AS `status`, `r`.`created_at` AS `created_at`, `p`.`nom` AS `patient_nom`, `p`.`prenom` AS `patient_prenom`, `p`.`email` AS `patient_email`, `p`.`pays` AS `patient_pays`, `mp`.`nom_procedure` AS `nom_procedure`, `mp`.`categorie` AS `procedure_categorie`, `sa`.`nom` AS `agent_nom`, `sa`.`email` AS `agent_email` FROM (((`requests` `r` left join `patients` `p` on(`r`.`id_patient` = `p`.`id_patient`)) left join `medical_procedures` `mp` on(`r`.`id_procedure` = `mp`.`id_procedure`)) left join `sales_agents` `sa` on(`r`.`id_commercial` = `sa`.`id_commercial`)) ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `v_upcoming_appointments`
---
-DROP TABLE IF EXISTS `v_upcoming_appointments`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`kubi8227`@`localhost` SQL SECURITY DEFINER VIEW `v_upcoming_appointments`  AS SELECT `a`.`id_appointment` AS `id_appointment`, `a`.`date_arrivee` AS `date_arrivee`, `a`.`date_depart` AS `date_depart`, `a`.`status` AS `status`, `p`.`nom` AS `patient_nom`, `p`.`prenom` AS `patient_prenom`, `p`.`email` AS `patient_email`, `h`.`nom` AS `hospital_nom`, `h`.`ville` AS `hospital_ville`, `q`.`prix_total` AS `prix_total`, `q`.`devise` AS `devise` FROM (((`appointments` `a` left join `patients` `p` on(`a`.`id_patient` = `p`.`id_patient`)) left join `hospitals` `h` on(`a`.`id_hospital` = `h`.`id_hospital`)) left join `quotes` `q` on(`a`.`id_quote` = `q`.`id_quote`)) WHERE `a`.`date_arrivee` >= curdate() ORDER BY `a`.`date_arrivee` ASC ;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `appointments`
---
-ALTER TABLE `appointments`
-  ADD CONSTRAINT `fk_appointment_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_appointment_patient` FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_appointment_quote` FOREIGN KEY (`id_quote`) REFERENCES `quotes` (`id_quote`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_appointment_request` FOREIGN KEY (`id_request`) REFERENCES `requests` (`id_request`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `case_managers`
---
-ALTER TABLE `case_managers`
-  ADD CONSTRAINT `fk_cm_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE;
-
---
--- Constraints for table `doctors`
---
-ALTER TABLE `doctors`
-  ADD CONSTRAINT `fk_doctor_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `galerie_patient`
---
-ALTER TABLE `galerie_patient`
-  ADD CONSTRAINT `fk_galerie_request` FOREIGN KEY (`id_request`) REFERENCES `requests` (`id_request`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `historique_email`
---
-ALTER TABLE `historique_email`
-  ADD CONSTRAINT `fk_email_commercial` FOREIGN KEY (`id_commercial`) REFERENCES `sales_agents` (`id_commercial`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_email_patient` FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_email_request` FOREIGN KEY (`id_request`) REFERENCES `requests` (`id_request`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints for table `hospital_coordinators`
---
-ALTER TABLE `hospital_coordinators`
-  ADD CONSTRAINT `fk_coordinator_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `hotels`
---
-ALTER TABLE `hotels`
-  ADD CONSTRAINT `fk_hotel_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE;
-
---
--- Constraints for table `notes`
---
-ALTER TABLE `notes`
-  ADD CONSTRAINT `fk_note_commercial` FOREIGN KEY (`id_commercial`) REFERENCES `sales_agents` (`id_commercial`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_note_request` FOREIGN KEY (`id_request`) REFERENCES `requests` (`id_request`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `procedure_hospital`
---
-ALTER TABLE `procedure_hospital`
-  ADD CONSTRAINT `fk_ph_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_ph_procedure` FOREIGN KEY (`id_procedure`) REFERENCES `medical_procedures` (`id_procedure`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `quotes`
---
-ALTER TABLE `quotes`
-  ADD CONSTRAINT `fk_quote_commercial` FOREIGN KEY (`id_commercial`) REFERENCES `sales_agents` (`id_commercial`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_quote_coordination` FOREIGN KEY (`id_coordination`) REFERENCES `hospital_coordinators` (`id_coordi`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_quote_hospital` FOREIGN KEY (`id_hospital`) REFERENCES `hospitals` (`id_hospital`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_quote_medecin` FOREIGN KEY (`id_medecin`) REFERENCES `doctors` (`id_medecin`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_quote_patient` FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_quote_request` FOREIGN KEY (`id_request`) REFERENCES `requests` (`id_request`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `relances`
---
-ALTER TABLE `relances`
-  ADD CONSTRAINT `fk_relance_commercial` FOREIGN KEY (`id_commercial`) REFERENCES `sales_agents` (`id_commercial`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_relance_request` FOREIGN KEY (`id_request`) REFERENCES `requests` (`id_request`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `requests`
---
-ALTER TABLE `requests`
-  ADD CONSTRAINT `fk_request_commercial` FOREIGN KEY (`id_commercial`) REFERENCES `sales_agents` (`id_commercial`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_request_patient` FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_request_procedure` FOREIGN KEY (`id_procedure`) REFERENCES `medical_procedures` (`id_procedure`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints for table `sales_agents`
---
-ALTER TABLE `sales_agents`
-  ADD CONSTRAINT `fk_sales_agent_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints for table `users`
---
-ALTER TABLE `users`
-  ADD CONSTRAINT `fk_users_role` FOREIGN KEY (`id_role`) REFERENCES `roles` (`id_role`) ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

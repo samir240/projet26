@@ -20,7 +20,9 @@ interface Request {
   commercial_nom: string;
   commercial_prenom: string;
 
+  created_at: string;
   updated_at: string;
+  case_manager_nom: string | null;
 }
 
 /* =====================
@@ -37,7 +39,7 @@ export default function RequestsPage() {
      FETCH DATA
   ===================== */
   useEffect(() => {
-    fetch('https://lepetitchaletoran.com/api/ia/requests.php')
+    fetch('https://webemtiyaz.com/api/ia/requests.php')
       .then((res) => res.json())
       .then((data) => {
         setRequests(data);
@@ -53,7 +55,7 @@ export default function RequestsPage() {
      FILTER QUALIFIED
   ===================== */
   const qualifiedRequests = requests.filter(
-    (r) => r.status === 'Qualified'
+    (r) => r.status === 'dispatched'
   );
 
   if (loading) {
@@ -72,7 +74,7 @@ export default function RequestsPage() {
       <div className="bg-white rounded-xl shadow">
         <div className="p-4 border-b">
           <h1 className="text-xl font-bold text-green-700">
-            Qualified Requests – Devis
+            Dispatched Requests - inquiries
           </h1>
         </div>
 
@@ -82,16 +84,18 @@ export default function RequestsPage() {
               <th className="p-3 text-left">ID</th>
               <th className="p-3 text-left">Patient</th>
               <th className="p-3 text-left">Procédure</th>
-              <th className="p-3 text-left">Commercial</th>
-              <th className="p-3 text-left">Date</th>
+              <th className="p-3 text-left">Coordinator</th>
+              <th className="p-3 text-left">Case Manager</th>
+              <th className="p-3 text-left">Reception date</th>
+              <th className="p-3 text-left">Answer date</th>
               <th className="p-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody>
             {qualifiedRequests.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-4 text-center text-gray-500">
-                  Aucune demande qualifiée
+                <td colSpan={8} className="p-4 text-center text-gray-500">
+                  Aucune demande dispatchée
                 </td>
               </tr>
             )}
@@ -115,7 +119,29 @@ export default function RequestsPage() {
                   {r.commercial_nom} {r.commercial_prenom}
                 </td>
 
-                <td className="p-3">{r.updated_at}</td>
+                <td className="p-3">
+                  {r.case_manager_nom || '-'}
+                </td>
+
+                <td className="p-3">
+                  {r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : '-'}
+                </td>
+
+                <td className="p-3">
+                  {r.updated_at ? new Date(r.updated_at).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : '-'}
+                </td>
 
                 <td className="p-3 text-right">
                   <button
@@ -125,7 +151,7 @@ export default function RequestsPage() {
                       setShowQuoteModal(true);
                     }}
                   >
-                    Créer un devis
+                    Quote
                   </button>
                 </td>
               </tr>

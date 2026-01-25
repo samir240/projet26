@@ -23,7 +23,7 @@ export default function HospitalsPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch('https://lepetitchaletoran.com/api/ia/get_all_hospitals.php')
+    fetch('https://webemtiyaz.com/api/ia/get_all_hospitals.php')
       .then(res => res.json())
       .then(res => {
         setHospitals(res.data || []);

@@ -1,127 +1,76 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 
-const PHP_API_BASE_URL = "https://lepetitchaletoran.com/api/ia/doctors.php";
-
-async function handleApiResponse(response: Response) {
-  if (!response.ok) {
-    const errorText = await response.text();
-    try {
-      const errorData = JSON.parse(errorText);
-      throw new Error(errorData.error || `PHP API error: ${response.status} - ${errorText}`);
-    } catch {
-      throw new Error(`PHP API error: ${response.status} - ${errorText}`);
-    }
-  }
-  const responseText = await response.text();
-  if (!responseText) return null;
-  try {
-    return JSON.parse(responseText);
-  } catch {
-    throw new Error(`Invalid JSON response from PHP API: ${responseText}`);
-  }
-}
+const PHP_API_URL = 'https://webemtiyaz.com/api/ia/doctors.php';
 
 export async function GET(req: NextRequest) {
   try {
-    const url = new URL(req.url);
-    const id = url.searchParams.get("id");
-    const id_hospital = url.searchParams.get("id_hospital");
-
-    let phpApiUrl = PHP_API_BASE_URL;
-    if (id) {
-      phpApiUrl += `?id=${id}`;
-    } else if (id_hospital) {
-      // Filtrer côté client car l'API PHP ne supporte pas id_hospital directement
-      phpApiUrl = PHP_API_BASE_URL;
-    }
-
-    const res = await fetch(phpApiUrl);
-    let data = await handleApiResponse(res);
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const id_hospital = searchParams.get('id_hospital');
     
-    // Filtrer par id_hospital si nécessaire
-    if (id_hospital && Array.isArray(data)) {
-      data = data.filter((doctor: any) => doctor.id_hospital === Number(id_hospital));
-    }
+    let url = PHP_API_URL;
+    if (id) url += `?id=${id}`;
+    else if (id_hospital) url += `?id_hospital=${id_hospital}`;
     
-    return NextResponse.json(data || []);
-  } catch (error) {
-    console.error("Error in GET /api/doctors:", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la récupération des docteurs", details: (error as Error).message },
-      { status: 500 }
-    );
+    const res = await fetch(url);
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const contentType = req.headers.get("content-type") || "";
+    const contentType = req.headers.get('content-type') || '';
     
-    // Cas A : Envoi de fichiers (Photo ou CV)
-    if (contentType.includes("multipart/form-data")) {
+    // Si c'est FormData (upload de fichiers)
+    if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
-      const res = await fetch(PHP_API_BASE_URL, {
-        method: "POST",
+      
+      const res = await fetch(PHP_API_URL, {
+        method: 'POST',
         body: formData,
       });
-      const data = await handleApiResponse(res);
-      return NextResponse.json(data);
-    } 
-    
-    // Cas B : Envoi de données JSON (Create)
-    else {
-      const body = await req.json();
-      const res = await fetch(PHP_API_BASE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await handleApiResponse(res);
+      
+      const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch (error) {
-    console.error("Error in POST /api/doctors:", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la création du docteur", details: (error as Error).message },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(req: NextRequest) {
-  try {
+    
+    // Sinon, c'est du JSON normal
     const body = await req.json();
-    const res = await fetch(PHP_API_BASE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...body, action: "update" }),
+    
+    const res = await fetch(PHP_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-    const data = await handleApiResponse(res);
+    
+    const data = await res.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error("Error in PUT /api/doctors:", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la mise à jour du docteur", details: (error as Error).message },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    const body = await req.json();
-    const res = await fetch(PHP_API_BASE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...body, action: "delete" }),
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+    
+    const res = await fetch(PHP_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id_medecin: parseInt(id) }),
     });
-    const data = await handleApiResponse(res);
+    
+    const data = await res.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error("Error in DELETE /api/doctors:", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la suppression du docteur", details: (error as Error).message },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

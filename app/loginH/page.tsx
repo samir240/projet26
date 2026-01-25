@@ -17,7 +17,7 @@ export default function LoginPage() {
   setDebug("");
 
   try {
-    const res = await fetch("../api/test/test_api", {
+    const res = await fetch("../api/login-users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -27,6 +27,12 @@ export default function LoginPage() {
 
     if (res.ok && json.success && json.data && json.data.user) {
       const user = json.data.user;
+
+      // Vérifier que l'utilisateur appartient à un hôpital (system A)
+      if (user.system === "A" && !user.id_hospital) {
+        setError("Cet utilisateur n'appartient à aucun hôpital");
+        return;
+      }
 
       // 🔥 AJOUT OBLIGATOIRE 🔥
       localStorage.setItem("user", JSON.stringify(user));

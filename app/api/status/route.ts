@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const PHP_URL = 'https://lepetitchaletoran.com/api/ia/manage_status.php';
+const PHP_URL = 'https://webemtiyaz.com/api/ia/manage_status.php';
 
 export async function GET() {
   const res = await fetch(PHP_URL, { cache: 'no-store' });

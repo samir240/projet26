@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "id_request est requis" }, { status: 400 });
     }
 
-    const res = await fetch(`https://lepetitchaletoran.com/api/ia/request_hospital.php?id_request=${id_request}`);
+    const res = await fetch(`https://webemtiyaz.com/api/ia/request_hospital.php?id_request=${id_request}`);
     
     if (!res.ok) {
       // Si 404, retourner un tableau vide (pas d'hôpitaux assignés)
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const res = await fetch("https://lepetitchaletoran.com/api/ia/request_hospital.php", {
+    const res = await fetch("https://webemtiyaz.com/api/ia/request_hospital.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -84,7 +84,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const res = await fetch("https://lepetitchaletoran.com/api/ia/request_hospital.php", {
+    const res = await fetch("https://webemtiyaz.com/api/ia/request_hospital.php", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -121,7 +121,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const res = await fetch("https://lepetitchaletoran.com/api/ia/request_hospital.php", {
+    const res = await fetch("https://webemtiyaz.com/api/ia/request_hospital.php", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

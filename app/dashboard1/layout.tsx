@@ -27,6 +27,8 @@ const navItems = [
   { href: "/dashboard1/Hopitaux", label: " Hopitaux" },
   { href: "/dashboard1/sales-agents", label: " Sales Agents" },
   { href: "/dashboard1/emails", label: " emails" },
+  { href: "/dashboard1/procedures", label: " Procedures" },
+  { href: "/dashboard1/relances", label: " Relances" },
 ];
 
 // -------------------------------------------------------------------
