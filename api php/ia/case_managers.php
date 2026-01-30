@@ -24,7 +24,7 @@ if ($method === 'GET') {
         exit;
     }
     
-    // Lister par hôpital
+    // Lister par h么pital
     if (isset($_GET['id_hospital'])) {
         $stmt = $pdo->prepare("SELECT * FROM case_managers WHERE id_hospital = ?");
         $stmt->execute([$_GET['id_hospital']]);
@@ -97,14 +97,15 @@ if ($method === 'POST') {
     }
 
     // CREATE
-    $stmt = $pdo->prepare("INSERT INTO case_managers (id_hospital, fullname, email, phone, countries_concerned, id_coordinator) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO case_managers (id_hospital, fullname, email, phone, countries_concerned, id_coordinator, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $data['id_hospital'],
         $data['fullname'],
         $data['email'] ?? null,
         $data['phone'] ?? null,
         $data['countries_concerned'] ?? null,
-        $data['id_coordinator'] ?? null // Utilisation de l'ID ici
+        $data['id_coordinator'] ?? null,
+        $data['is_active'] ?? 1
     ]);
     
     echo json_encode(["success" => true, "id" => $pdo->lastInsertId()]);

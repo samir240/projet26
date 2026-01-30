@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/hospital_coordinators.php';
+const PHP_API_URL = 'https://webemtiyaz.com/api/ia/case_managers.php';
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,6 +22,22 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const contentType = req.headers.get('content-type') || '';
+    
+    // Si c'est FormData (upload de fichiers)
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      
+      const res = await fetch(PHP_API_URL, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await res.json();
+      return NextResponse.json(data);
+    }
+    
+    // Sinon, c'est du JSON normal (Create / Update / Delete)
     const body = await req.json();
     
     const res = await fetch(PHP_API_URL, {
@@ -49,7 +65,7 @@ export async function DELETE(req: NextRequest) {
     const res = await fetch(PHP_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', id_coordi: parseInt(id) }),
+      body: JSON.stringify({ action: 'delete', id_case_manager: parseInt(id) }),
     });
     
     const data = await res.json();

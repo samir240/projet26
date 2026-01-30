@@ -1,184 +1,163 @@
 <?php
+/**
+ * Fichier : api/ia/hospital_media.php
+ * Arborescence : 
+ * - api/ia/hospital_media.php
+ * - api/ia/uploads/hospital_{id}/media/
+ */
+
+// 1. Sécurité et Headers
+error_reporting(0);
+ini_set('display_errors', 0);
+if (ob_get_level()) ob_clean(); // Nettoie toute sortie parasite pour garantir un JSON pur
+
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// 2. Connexion BDD
 include "config.php";
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-/* ======================
-   GET - Liste des médias d'un hôpital
-====================== */
+/*
+|--------------------------------------------------------------------------
+| GET — Récupérer les médias
+|--------------------------------------------------------------------------
+*/
 if ($method === 'GET') {
-    if (!isset($_GET['id_hospital'])) {
-        echo json_encode(["error" => "id_hospital est requis"]);
+    $id_hospital = intval($_GET['id_hospital'] ?? 0);
+
+    if ($id_hospital <= 0) {
+        http_response_code(400);
+        echo json_encode(["error" => "ID hospital requis"]);
         exit;
     }
 
-    $id_hospital = intval($_GET['id_hospital']);
-
-    $stmt = $pdo->prepare("
-        SELECT * FROM hospital_media 
-        WHERE id_hospital = ? 
-        ORDER BY ordre ASC, id_media DESC
-    ");
+    $stmt = $pdo->prepare("SELECT * FROM hospital_media WHERE id_hospital = ? ORDER BY ordre ASC, id_media DESC");
     $stmt->execute([$id_hospital]);
     echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     exit;
 }
 
-/* ======================
-   POST - Upload / Update / Delete
-====================== */
+/*
+|--------------------------------------------------------------------------
+| POST — Upload / Update / Delete
+|--------------------------------------------------------------------------
+*/
 if ($method === 'POST') {
-    
-    // DELETE
-    $input = json_decode(file_get_contents("php://input"), true);
-    if ($input && isset($input['action']) && $input['action'] === 'delete') {
-        if (!isset($input['id_media'])) {
-            echo json_encode(["error" => "id_media est requis"]);
-            exit;
-        }
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    $isMultipart = strpos($contentType, 'multipart/form-data') !== false;
+    $input = !$isMultipart ? json_decode(file_get_contents("php://input"), true) : null;
 
-        // Supprimer le fichier physique
-        $stmt = $pdo->prepare("SELECT path FROM hospital_media WHERE id_media = ?");
-        $stmt->execute([$input['id_media']]);
-        $media = $stmt->fetch(PDO::FETCH_ASSOC);
+    // --- LOGIQUE DELETE ---
+    if ($input && ($input['action'] ?? '') === 'delete') {
+        $id_media = intval($input['id_media'] ?? 0);
         
-        if ($media && $media['path']) {
-            $filePath = $_SERVER['DOCUMENT_ROOT'] . '/api/hopital/media/' . basename($media['path']);
+        $stmt = $pdo->prepare("SELECT path FROM hospital_media WHERE id_media = ?");
+        $stmt->execute([$id_media]);
+        $media = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($media) {
+            // On transforme le chemin relatif BDD en chemin serveur réel pour unlink
+            $filePath = $_SERVER['DOCUMENT_ROOT'] . $media['path'];
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
+            $pdo->prepare("DELETE FROM hospital_media WHERE id_media = ?")->execute([$id_media]);
         }
-
-        $stmt = $pdo->prepare("DELETE FROM hospital_media WHERE id_media = ?");
-        $stmt->execute([$input['id_media']]);
         echo json_encode(["success" => true]);
         exit;
     }
 
-    // UPDATE
-    if ($input && isset($input['action']) && $input['action'] === 'update') {
-        if (!isset($input['id_media'])) {
-            echo json_encode(["error" => "id_media est requis"]);
-            exit;
-        }
+    // --- LOGIQUE UPDATE (Ordre/Langue) ---
+    if ($input && ($input['action'] ?? '') === 'update') {
+        $id_media = intval($input['id_media'] ?? 0);
+        $ordre = intval($input['ordre'] ?? 0);
+        $langue = $input['langue'] ?? 'all';
 
-        $allowed = ['ordre', 'langue'];
-        $fields = [];
-        $values = [];
+        $pdo->prepare("UPDATE hospital_media SET ordre = ?, langue = ? WHERE id_media = ?")
+            ->execute([$ordre, $langue, $id_media]);
 
-        foreach ($allowed as $field) {
-            if (array_key_exists($field, $input)) {
-                $fields[] = "$field = ?";
-                $values[] = $input[$field];
-            }
-        }
-
-        if (empty($fields)) {
-            echo json_encode(["error" => "Aucun champ à mettre à jour"]);
-            exit;
-        }
-
-        $values[] = $input['id_media'];
-        $sql = "UPDATE hospital_media SET " . implode(', ', $fields) . " WHERE id_media = ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($values);
         echo json_encode(["success" => true]);
         exit;
     }
 
-    // UPLOAD (FormData)
-    if (!isset($_POST['id_hospital'])) {
-        echo json_encode(["error" => "id_hospital est requis"]);
-        exit;
-    }
-
-    $id_hospital = intval($_POST['id_hospital']);
-    $langue = $_POST['langue'] ?? 'all';
-    
-    // Chemin relatif depuis le dossier racine du serveur
-    // Le dossier sera créé dans: /api/hopital/media/
-    $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/api/hopital/media/';
-    
-    // Créer le dossier s'il n'existe pas
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
-    }
-
-    $uploaded = [];
-    $errors = [];
-
+    // --- LOGIQUE UPLOAD (Multipart) ---
+    // Vérifier d'abord les fichiers comme dans doctors.php
     if (isset($_FILES['files'])) {
-        $files = $_FILES['files'];
-        
-        // Gérer plusieurs fichiers
-        $fileCount = is_array($files['name']) ? count($files['name']) : 1;
-        
-        for ($i = 0; $i < $fileCount; $i++) {
-            $fileName = is_array($files['name']) ? $files['name'][$i] : $files['name'];
-            $fileTmp = is_array($files['tmp_name']) ? $files['tmp_name'][$i] : $files['tmp_name'];
-            $fileError = is_array($files['error']) ? $files['error'][$i] : $files['error'];
-            $fileSize = is_array($files['size']) ? $files['size'][$i] : $files['size'];
+        $id_hospital = isset($_POST['id_hospital']) ? intval($_POST['id_hospital']) : 0;
+        $langue = isset($_POST['langue']) ? $_POST['langue'] : 'all';
 
-            if ($fileError === UPLOAD_ERR_OK) {
-                // Vérifier le type de fichier
-                $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                $mimeType = finfo_file($finfo, $fileTmp);
-                finfo_close($finfo);
+        if ($id_hospital <= 0) {
+            http_response_code(400);
+            echo json_encode(["error" => "id_hospital est requis pour l'upload"]);
+            exit;
+        }
 
-                if (!in_array($mimeType, $allowedTypes)) {
-                    $errors[] = "Format non supporté pour $fileName";
-                    continue;
-                }
+        // Définition de l'arborescence dynamique
+        $subFolder = 'uploads/hospital_' . $id_hospital . '/media/';
+        $uploadDir = __DIR__ . '/' . $subFolder;
 
-                // Générer un nom unique
-                $extension = pathinfo($fileName, PATHINFO_EXTENSION);
-                $newFileName = 'hospital_' . $id_hospital . '_' . time() . '_' . $i . '.' . $extension;
-                $targetPath = $uploadDir . $newFileName;
+        // Création du dossier si inexistant
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
 
-                if (move_uploaded_file($fileTmp, $targetPath)) {
-                    $relativePath = '/api/hopital/media/' . $newFileName;
-                    
-                    // Insérer en base
-                    $stmt = $pdo->prepare("
-                        INSERT INTO hospital_media (id_hospital, path, langue, ordre)
-                        VALUES (?, ?, ?, (SELECT COALESCE(MAX(ordre), 0) + 1 FROM hospital_media AS hm WHERE hm.id_hospital = ?))
-                    ");
-                    $stmt->execute([$id_hospital, $relativePath, $langue, $id_hospital]);
-                    
-                    $uploaded[] = [
-                        'id_media' => $pdo->lastInsertId(),
-                        'path' => $relativePath,
-                        'langue' => $langue
-                    ];
-                } else {
-                    $errors[] = "Erreur lors de l'upload de $fileName";
-                }
-            } else {
-                $errors[] = "Erreur d'upload pour $fileName";
+        $uploaded = [];
+        $f = $_FILES['files'];
+        // Gestion du format multiple (tableau) ou simple
+        $count = is_array($f['name']) ? count($f['name']) : 1;
+
+        for ($i = 0; $i < $count; $i++) {
+            $name = is_array($f['name']) ? $f['name'][$i] : $f['name'];
+            $tmp  = is_array($f['tmp_name']) ? $f['tmp_name'][$i] : $f['tmp_name'];
+            $err  = is_array($f['error']) ? $f['error'][$i] : $f['error'];
+
+            if ($err !== UPLOAD_ERR_OK) continue;
+
+            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) continue;
+
+            // Génération d'un nom unique pour éviter les doublons
+            $newName = 'img_' . time() . '_' . uniqid() . '.' . $ext;
+            $dest = $uploadDir . $newName;
+
+            if (move_uploaded_file($tmp, $dest)) {
+                // Chemin d'accès public pour la base de données
+                $dbPath = '/api/ia/' . $subFolder . $newName;
+
+                $sql = "INSERT INTO hospital_media (id_hospital, path, langue, ordre) 
+                        VALUES (?, ?, ?, (SELECT COALESCE(MAX(h_temp.ordre), 0) + 1 
+                                        FROM hospital_media as h_temp 
+                                        WHERE h_temp.id_hospital = ?))";
+
+                $stmtInsert = $pdo->prepare($sql);
+                $stmtInsert->execute([$id_hospital, $dbPath, $langue, $id_hospital]);
+
+                $uploaded[] = [
+                    "id_media" => $pdo->lastInsertId(),
+                    "path" => $dbPath,
+                    "langue" => $langue
+                ];
             }
         }
-    }
 
-    if (!empty($uploaded)) {
         echo json_encode([
-            "success" => true,
-            "uploaded" => $uploaded,
-            "errors" => $errors
+            "success" => count($uploaded) > 0,
+            "uploaded" => $uploaded
         ]);
-    } else {
-        echo json_encode([
-            "success" => false,
-            "error" => "Aucun fichier uploadé",
-            "errors" => $errors
-        ]);
+        exit;
     }
-    exit;
 }
 
-echo json_encode(["error" => "Méthode non autorisée"]);
+// Si aucune condition n'est remplie
+http_response_code(400);
+echo json_encode(["error" => "Requête invalide ou ID manquant"]);
+exit;

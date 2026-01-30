@@ -250,7 +250,7 @@ export default function HospitalEditPage() {
     if (!id) return;
     setMediaLoading(true);
     try {
-      const response = await fetch(`/api/hospitals/media?id_hospital=${id}`);
+      const response = await fetch(`/api/poto?id_hospital=${id}`);
       if (response.ok) {
         const data = await response.json();
         setMedia(Array.isArray(data) ? data : []);
@@ -262,49 +262,135 @@ export default function HospitalEditPage() {
     }
   };
 
-const uploadMedia = async () => {
-  // Affiche l'ID dans une alerte
-  alert(`Vérification ID Hôpital : ${id}`);
-
-  // Affiche l'ID et les fichiers dans la console (F12)
-  console.log("--- TEST DEBUG ---");
-  console.log("ID Hôpital récupéré :", id);
-  console.log("Type de l'ID :", typeof id);
-  console.log("Nombre de fichiers sélectionnés :", selectedFiles.length);
-  console.log("------------------");
-
-  // On arrête la fonction ici, rien n'est envoyé au serveur
-  return;
-};
+  const uploadMedia = async () => {
+    const hospitalId = Number(id);
+  
+    if (!hospitalId || isNaN(hospitalId)) {
+      console.error('ID hôpital invalide:', id);
+      alert('ID hôpital invalide. Recharge la page.');
+      return;
+    }
+  
+    if (selectedFiles.length === 0) {
+      alert('Veuillez sélectionner au moins un fichier');
+      return;
+    }
+  
+    setMediaLoading(true);
+  
+    // --- FONCTION INTERNE POUR CONVERTIR EN BASE64 ---
+    const fileToBase64 = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+      });
+    };
+  
+    try {
+      // 1. On convertit tous les fichiers en Base64 (Tableau de strings)
+      // C'est cette étape qui permet de ne plus utiliser FormData
+      const base64Images = await Promise.all(selectedFiles.map(file => fileToBase64(file)));
+  
+      // 2. On prépare l'objet JSON comme le PHP l'attend maintenant
+      const payload = {
+        id_hospital: hospitalId,
+        langue: mediaLangue,
+        images: base64Images // C'est ici que passent tes images
+      };
+  
+      console.log("Envoi du payload JSON (Base64)...");
+  
+      const response = await fetch('/api/poto', { // Assure-toi que c'est bien /api/media
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      const text = await response.text();
+      
+      console.log("--- DEBUG RETOUR SERVEUR ---");
+      console.log("Status:", response.status);
+      console.log("Text:", text);
+      console.log("----------------------------");
+  
+      let result = {};
+      if (text && text.trim().length > 0) {
+        try {
+          result = JSON.parse(text);
+        } catch (parseError) {
+          throw new Error(`Erreur parsing JSON. Status: ${response.status}`);
+        }
+      }
+  
+      if (!response.ok) {
+        throw new Error(result.error || `Erreur HTTP ${response.status}`);
+      }
+  
+      if (result.success) {
+        // Si le PHP renvoie les nouveaux fichiers, on met à jour l'état
+        if (result.data) {
+          setMedia(prev => [...prev, ...result.data]);
+        } else {
+          // Sinon on recharge tout proprement
+          loadMedia();
+        }
+  
+        setSelectedFiles([]);
+        alert('Photos ajoutées avec succès (via Base64) !');
+      } else {
+        throw new Error(result.error || 'Erreur inconnue');
+      }
+  
+    } catch (err) {
+      console.error('Erreur upload:', err);
+      alert(`Erreur: ${err instanceof Error ? err.message : 'Inconnue'}`);
+    } finally {
+      setMediaLoading(false);
+    }
+  };
 
 
   const deleteMedia = async (idMedia: number) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce média ?')) return;
-
+  
     try {
-      const response = await fetch('/api/hospitals/media', {
+      // On passe l'ID dans l'URL (?id=...) comme attendu par le PHP et le route.ts
+      const response = await fetch(`/api/poto?id=${idMedia}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_media: idMedia }),
       });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la suppression');
+  
+      // On vérifie d'abord si la réponse est correcte
+      const text = await response.text();
+      let result;
+      
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        console.error("Retour serveur non JSON:", text);
+        throw new Error("Le serveur n'a pas renvoyé de JSON valide");
       }
-
-      const result = await response.json();
-      if (result.success) {
-        loadMedia();
+  
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Erreur lors de la suppression');
       }
+  
+      // Si tout est ok, on recharge la liste
+      alert('Média supprimé avec succès');
+      loadMedia();
+  
     } catch (err) {
       console.error('Erreur lors de la suppression:', err);
-      alert('Erreur lors de la suppression');
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression');
     }
   };
 
   const updateMediaOrder = async (idMedia: number, newOrder: number) => {
     try {
-      const response = await fetch('/api/hospitals/media', {
+      const response = await fetch('/api/media', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -635,9 +721,10 @@ const uploadMedia = async () => {
     try {
       // Mettre à jour le case manager
       const response = await fetch('/api/case-managers', {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'update',
           id_case_manager: editingCaseManagerId,
           fullname: caseManagerForm.fullname,
           email: caseManagerForm.email,
@@ -692,9 +779,9 @@ const uploadMedia = async () => {
     setCaseManagersLoading(true);
     try {
       const response = await fetch('/api/case-managers', {
-        method: 'DELETE',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_case_manager: idCaseManager }),
+        body: JSON.stringify({ action: 'delete', id_case_manager: idCaseManager }),
       });
 
       if (!response.ok) {
@@ -962,7 +1049,7 @@ const uploadMedia = async () => {
 
         if (!uploadResponse.ok) {
           const uploadError = await uploadResponse.json().catch(() => ({ error: 'Erreur upload' }));
-          throw new Error(uploadError.error || 'Erreur lors de l\'upload des fichiers');
+          throw new Error(uploadError.error || "Erreur lors de l'upload des fichiers");
         }
       }
 
