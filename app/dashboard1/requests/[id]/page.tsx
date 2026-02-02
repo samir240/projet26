@@ -90,7 +90,7 @@ export default function PatientDetailPage() {
     if (!patientId) return;
 
     // Fetch patient details
-    fetch(`https://webemtiyaz.com/api/ia/patients.php?id=${patientId}`)
+    fetch(`https://pro.medotra.com/app/http/api/patients.php?id=${patientId}`)
       .then(res => res.json())
       .then((data: Patient) => {
         setPatient(data);
@@ -99,7 +99,7 @@ export default function PatientDetailPage() {
       .catch(err => console.error('Error fetching patient:', err));
 
     // Fetch all requests for this patient
-    fetch('https://webemtiyaz.com/api/ia/requests.php')
+    fetch('https://pro.medotra.com/app/http/api/requests.php')
       .then(res => res.json())
       .then((data: any[]) => {
         const patientRequests = data.filter(r => r.patient_id === Number(patientId));
@@ -189,7 +189,7 @@ export default function PatientDetailPage() {
     setHospitalsLoading(true);
     try {
       // Load hospitals that offer the requested procedure
-      const procedureHospitalsRes = await fetch('https://webemtiyaz.com/api/ia/procedure_hospital.php');
+      const procedureHospitalsRes = await fetch('https://pro.medotra.com/app/http/api/procedure_hospital.php');
       if (!procedureHospitalsRes.ok) {
         throw new Error(`HTTP error! status: ${procedureHospitalsRes.status}`);
       }
@@ -201,7 +201,7 @@ export default function PatientDetailPage() {
       );
 
       // Get hospital details
-      const hospitalsRes = await fetch('https://webemtiyaz.com/api/ia/get_all_hospitals.php');
+      const hospitalsRes = await fetch('https://pro.medotra.com/app/http/api/get_all_hospitals.php');
       if (!hospitalsRes.ok) {
         throw new Error(`HTTP error! status: ${hospitalsRes.status}`);
       }

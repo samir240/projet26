@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/users.php';
+const PHP_API_URL = 'https://pro.medotra.com/app/http/api/users.php';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     // D'abord vérifier les credentials avec login1.php
-    const loginCheckRes = await fetch('https://webemtiyaz.com/api/login1.php', {
+    const loginCheckRes = await fetch('https://pro.medotra.com/api/login1.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

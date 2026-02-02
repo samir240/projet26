@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/doctors.php';
+const PHP_API_URL = 'https://pro.medotra.com/app/http/api/doctors.php';
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,26 +24,38 @@ export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get('content-type') || '';
     
-    // Si c'est FormData (upload de fichiers)
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData();
+    // Si le Content-Type est explicitement JSON, traiter comme JSON
+    if (contentType.includes('application/json')) {
+      const body = await req.json();
       
       const res = await fetch(PHP_API_URL, {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       
       const data = await res.json();
       return NextResponse.json(data);
     }
     
-    // Sinon, c'est du JSON normal
-    const body = await req.json();
+    // Sinon, traiter comme FormData (upload de fichiers)
+    // Le Content-Type pour FormData est généralement "multipart/form-data; boundary=..."
+    const formData = await req.formData();
+    
+    // Vérifier que id_medecin et id_hospital sont présents
+    const idMedecin = formData.get('id_medecin');
+    const idHospital = formData.get('id_hospital');
+    
+    if (!idMedecin || !idHospital) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'id_medecin et id_hospital sont requis pour l\'upload de fichiers' 
+      }, { status: 400 });
+    }
     
     const res = await fetch(PHP_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: formData,
     });
     
     const data = await res.json();

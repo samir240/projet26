@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const res = await fetch("https://webemtiyaz.com/api/ia/requests.php", {
+  const res = await fetch("https://pro.medotra.com/app/http/api/requests.php", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

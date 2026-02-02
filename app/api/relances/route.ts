@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/relances.php';
+const PHP_API_URL = 'https://pro.medotra.com/app/http/api/relances.php';
 
 export async function GET() {
   try {

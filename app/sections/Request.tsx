@@ -19,7 +19,7 @@ export default function Request() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch("https://webemtiyaz.com/api/get_procedures.php");
+        const res = await fetch("https://pro.medotra.com/api/get_procedures.php");
         const data = await res.text();
         const cleanJSON = data.substring(data.indexOf("{"));
         const parsed = JSON.parse(cleanJSON);

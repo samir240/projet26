@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/hotels.php';
+const PHP_API_URL = 'https://pro.medotra.com/app/http/api/hotels.php';
 
 export async function GET(req: NextRequest) {
   try {

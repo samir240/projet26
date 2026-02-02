@@ -1,9 +1,9 @@
 <?php
 /**
- * Fichier : api/ia/hospital_media.php
+ * Fichier : app/http/api/hospital_media.php
  * Arborescence : 
- * - api/ia/hospital_media.php
- * - api/ia/uploads/hospital_{id}/media/
+ * - app/http/api/hospital_media.php
+ * - app/http/api/uploads/hospital_{id}/media/
  */
 
 // 1. Sécurité et Headers
@@ -131,7 +131,7 @@ if ($method === 'POST') {
 
             if (move_uploaded_file($tmp, $dest)) {
                 // Chemin d'accès public pour la base de données
-                $dbPath = '/api/ia/' . $subFolder . $newName;
+                $dbPath = '/app/http/api/' . $subFolder . $newName;
 
                 $sql = "INSERT INTO hospital_media (id_hospital, path, langue, ordre) 
                         VALUES (?, ?, ?, (SELECT COALESCE(MAX(h_temp.ordre), 0) + 1 

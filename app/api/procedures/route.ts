@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/medical_procedures.php';
+const PHP_API_URL = 'https://pro.medotra.com/app/http/api/medical_procedures.php';
 
 // GET : Récupérer toutes les procédures
 export async function GET() {

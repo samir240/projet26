@@ -57,7 +57,7 @@ export default function DoctorsPage() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [editSelectedLanguages, setEditSelectedLanguages] = useState<string[]>([]);
 
-  const PHOTO_BASE_URL = 'https://webemtiyaz.com/';
+  const PHOTO_BASE_URL = 'https://pro.medotra.com/';
   const availableLanguages = ['fr', 'en', 'ar', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function DoctorsPage() {
 
   const loadCategories = async () => {
     try {
-      const res = await fetch('https://webemtiyaz.com/api/ia/medical_procedures.php');
+      const res = await fetch('https://pro.medotra.com/app/http/api/medical_procedures.php');
       const data = await res.json();
       if (Array.isArray(data)) {
         // Récupérer les catégories distinctes
@@ -150,6 +150,14 @@ export default function DoctorsPage() {
     if (!photo) return null;
     // Si c'est déjà une URL complète ou data URL, retourner directement
     if (photo.startsWith('http') || photo.startsWith('data:')) return photo;
+    // Si le chemin commence par "uploads/", ajouter le préfixe "app/http/api/"
+    if (photo.startsWith('uploads/')) {
+      return `${PHOTO_BASE_URL}app/http/api/${photo}`;
+    }
+    // Si le chemin commence déjà par "app/http/api/", utiliser tel quel
+    if (photo.startsWith('app/http/api/')) {
+      return `${PHOTO_BASE_URL}${photo}`;
+    }
     // Sinon, construire l'URL complète
     return `${PHOTO_BASE_URL}${photo}`;
   };

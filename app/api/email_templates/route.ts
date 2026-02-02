@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const PHP_URL = 'https://webemtiyaz.com/api/ia/manage_email_templates.php';
+const PHP_URL = 'https://pro.medotra.com/app/http/api/manage_email_templates.php';
 
 // Récupérer la liste (Appelé par fetch('/api/email_templates'))
 export async function GET() {

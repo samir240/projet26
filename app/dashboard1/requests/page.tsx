@@ -111,7 +111,7 @@ const [newRequest, setNewRequest] = useState<Partial<Request>>({
     FETCH API
   ------------------------------------------------------------- */
  useEffect(() => {
-  fetch("https://webemtiyaz.com/api/ia/requests.php")
+  fetch("https://pro.medotra.com/app/http/api/requests.php")
     .then(res => res.json())
     .then((data: any[]) => {
       const mapped: Request[] = data.map(r => ({
@@ -169,7 +169,7 @@ const [newRequest, setNewRequest] = useState<Partial<Request>>({
     })
     .catch(() => setLoading(false));
 
-    fetch("https://webemtiyaz.com/api/ia/get_all_agents.php")
+    fetch("https://pro.medotra.com/app/http/api/get_all_agents.php")
     .then(res => res.json())
     .then(data => {
       if (data.success) setAgents(data.data);
@@ -195,7 +195,7 @@ const loadAssignedHospitals = async (requestsList: Request[]) => {
             activeHospitals.map(async (h: any) => {
               try {
                 // Charger les détails de l'hôpital
-                const hospitalRes = await fetch(`https://webemtiyaz.com/api/ia/hospitals.php?id=${h.id_hospital}`);
+                const hospitalRes = await fetch(`https://pro.medotra.com/app/http/api/hospitals.php?id=${h.id_hospital}`);
                 if (hospitalRes.ok) {
                   const hospitalData = await hospitalRes.json();
                   
@@ -204,7 +204,7 @@ const loadAssignedHospitals = async (requestsList: Request[]) => {
                   let devise = null;
                   if (req.id_procedure) {
                     try {
-                      const priceRes = await fetch('https://webemtiyaz.com/api/ia/procedure_hospital.php');
+                      const priceRes = await fetch('https://pro.medotra.com/app/http/api/procedure_hospital.php');
                       if (priceRes.ok) {
                         const priceText = await priceRes.text();
                         const priceData = priceText ? JSON.parse(priceText) : [];
@@ -256,7 +256,7 @@ const loadAssignedHospitals = async (requestsList: Request[]) => {
 
 // Fetch des procédures au chargement
 useEffect(() => {
-  fetch("https://webemtiyaz.com/api/get_procedures.php")
+  fetch("https://pro.medotra.com/api/get_procedures.php")
     .then(res => res.json())
     .then(data => { if (data.success) setProcedures(data.data); });
 }, []);
@@ -278,7 +278,7 @@ useEffect(() => {
   const handleDelete = async (id: number) => {
     if (!confirm("Supprimer cette requête ?")) return;
 
-    await fetch("https://webemtiyaz.com/api/ia/requests.php", {
+    await fetch("https://pro.medotra.com/app/http/api/requests.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "delete", id_request: id })

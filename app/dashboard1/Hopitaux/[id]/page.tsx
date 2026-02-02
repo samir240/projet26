@@ -77,6 +77,7 @@ interface CaseManager {
   updated_at: string;
 }
 
+
 interface Doctor {
   id_medecin: number;
   id_hospital: number;
@@ -84,7 +85,10 @@ interface Doctor {
   photo: string | null;
   cv: string | null;
   specialite: string | null;
-  langues: string | null; // comma-separated languages
+  qualifications: string | null;
+  experience_years: number;
+  realisations: string | null;
+  langues: string | null;
   description: string | null;
   note: number;
   reviews: number;
@@ -93,8 +97,6 @@ interface Doctor {
   email: string | null;
   telephone: string | null;
   is_active: number;
-  created_at: string;
-  updated_at: string;
 }
 
 type Tab = 'Profile' | 'Media' | 'Treatments' | 'Doctors' | 'Notifications' | 'Case Managers' | 'Hotels' | 'Reviews';
@@ -113,7 +115,7 @@ const LANGUAGES = [
   'French',
   'Russian',
   'German',
-  'Does not speak any foreign language'
+  'Turkish'
 ];
 
 export default function HospitalEditPage() {
@@ -164,13 +166,26 @@ export default function HospitalEditPage() {
   });
   const [caseManagerPhoto, setCaseManagerPhoto] = useState<File | null>(null);
 
-  // États pour le formulaire de docteur
-  const [doctorForm, setDoctorForm] = useState({
-    nom_medecin: '',
-    langues: [] as string[],
-  });
-  const [doctorPhoto, setDoctorPhoto] = useState<File | null>(null);
-  const [doctorCV, setDoctorCV] = useState<File | null>(null);
+ // États pour le formulaire de docteur
+ const [doctorForm, setDoctorForm] = useState({
+  nom_medecin: '',
+  email: '',
+  telephone: '',
+  specialite: '',
+  langues: [] as string[],
+  description: '',
+  note: 5,
+  sexe: 'M',
+  nationalite: '',
+  qualifications: '',
+  experience_years: 0,
+  realisations: '',
+  is_active: 1
+});
+
+const [doctorPhoto, setDoctorPhoto] = useState<File | null>(null);
+const [doctorCV, setDoctorCV] = useState<File | null>(null);
+const [doctorCategories, setDoctorCategories] = useState<string[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -228,13 +243,41 @@ export default function HospitalEditPage() {
   useEffect(() => {
     if (activeTab === 'Doctors' && id) {
       loadDoctors();
+      loadDoctorCategories();
     }
   }, [activeTab, id]);
+
+  // Charger les catégories pour la spécialité
+  const loadDoctorCategories = async () => {
+    try {
+      const res = await fetch('https://pro.medotra.com/app/http/api/medical_procedures.php');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const uniqueCategories = [...new Set(data.map((p: any) => p.categorie).filter(Boolean))];
+        setDoctorCategories(uniqueCategories.sort());
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
+// Helper pour construire l'URL correcte des photos/CV des docteurs
+const getDoctorMediaUrl = (path: string | null) => {
+  if (!path) return null;
+
+  // 1. Nettoyer le chemin : supprimer les "../" si PHP les a enregistrés en BDD
+  // On transforme "../../../uploads/..." en "uploads/..."
+  const cleanPath = path.replace(/\.\.\//g, '');
+
+  // 2. Construire l'URL propre
+  // Comme le dossier 'uploads' est à la racine, on tape directement dessus
+  return `https://pro.medotra.com/${cleanPath}`;
+};
 
   const loadTreatments = async () => {
     setTreatmentsLoading(true);
     try {
-      const response = await fetch('https://webemtiyaz.com/api/ia/procedure_hospital.php');
+      const response = await fetch('https://pro.medotra.com/app/http/api/procedure_hospital.php');
       const data: Treatment[] = await response.json();
       // Filtrer par id_hospital
       const hospitalTreatments = data.filter(t => t.id_hospital === Number(id));
@@ -804,226 +847,228 @@ export default function HospitalEditPage() {
     }
   };
 
-  // ========== DOCTORS FUNCTIONS ==========
-  const loadDoctors = async () => {
-    if (!id) return;
-    setDoctorsLoading(true);
-    try {
-      const response = await fetch(`/api/doctors?id_hospital=${id}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data: Doctor[] = await response.json();
-      setDoctors(data || []);
-    } catch (err) {
-      console.error('Erreur lors du chargement des docteurs:', err);
-      setError('Erreur lors du chargement des docteurs');
-    } finally {
-      setDoctorsLoading(false);
+// ========== DOCTORS FUNCTIONS ==========
+const loadDoctors = async () => {
+  if (!id) return;
+  setDoctorsLoading(true);
+  try {
+    const response = await fetch(`/api/doctors?id_hospital=${id}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+    const data: Doctor[] = await response.json();
+    setDoctors(data || []);
+  } catch (err) {
+    console.error('Erreur lors du chargement des docteurs:', err);
+    setError('Erreur lors du chargement des docteurs');
+  } finally {
+    setDoctorsLoading(false);
+  }
+};
 
-  const openDoctorModal = (doctor?: Doctor) => {
-    if (doctor) {
-      setEditingDoctorId(doctor.id_medecin);
-      setEditingDoctor(doctor);
-      setDoctorForm({
-        nom_medecin: doctor.nom_medecin || '',
-        langues: doctor.langues 
-          ? (doctor.langues.includes(',') 
-              ? doctor.langues.split(',').map(l => l.trim())
-              : [doctor.langues])
-          : [],
-      });
-      // Ne pas réinitialiser les fichiers si on édite (pour garder les fichiers existants)
-      setDoctorPhoto(null);
-      setDoctorCV(null);
-    } else {
-      setEditingDoctorId(null);
-      setEditingDoctor(null);
-      setDoctorForm({
-        nom_medecin: '',
-        langues: [],
-      });
-      setDoctorPhoto(null);
-      setDoctorCV(null);
-    }
-    setShowDoctorModal(true);
-  };
+const openDoctorModal = (doctor?: Doctor) => {
+  // INFO DEBUG
+  console.log("Opening Modal - Data received:", doctor);
 
-  const closeDoctorModal = () => {
-    setShowDoctorModal(false);
+  if (doctor) {
+    setEditingDoctorId(doctor.id_medecin);
+    setEditingDoctor(doctor);
+    setDoctorForm({
+      nom_medecin: doctor.nom_medecin || '',
+      email: doctor.email || '',
+      telephone: doctor.telephone || '',
+      specialite: doctor.specialite || '',
+      langues: doctor.langues 
+        ? (doctor.langues.includes(',') 
+            ? doctor.langues.split(',').map(l => l.trim())
+            : [doctor.langues])
+        : [],
+      description: doctor.description || '',
+      note: doctor.note || 5,
+      sexe: doctor.sexe || 'M',
+      nationalite: doctor.nationalite || '',
+      qualifications: doctor.qualifications || '',
+      experience_years: doctor.experience_years || 0,
+      realisations: doctor.realisations || '',
+      is_active: doctor.is_active ?? 1
+    });
+    setDoctorPhoto(null);
+    setDoctorCV(null);
+  } else {
     setEditingDoctorId(null);
     setEditingDoctor(null);
     setDoctorForm({
       nom_medecin: '',
+      email: '',
+      telephone: '',
+      specialite: '',
       langues: [],
+      description: '',
+      note: 5,
+      sexe: 'M',
+      nationalite: '',
+      qualifications: '',
+      experience_years: 0,
+      realisations: '',
+      is_active: 1
     });
     setDoctorPhoto(null);
     setDoctorCV(null);
-  };
+  }
+  setShowDoctorModal(true);
+};
 
-  const createDoctor = async () => {
-    if (!id) return;
-    
-    if (!doctorForm.nom_medecin) {
-      alert('Veuillez remplir le champ obligatoire (Full name)');
-      return;
+const closeDoctorModal = () => {
+  setShowDoctorModal(false);
+  setEditingDoctorId(null);
+  setEditingDoctor(null);
+  setDoctorPhoto(null);
+  setDoctorCV(null);
+};
+
+const createDoctor = async () => {
+  if (!id) return;
+  
+  if (!doctorForm.nom_medecin) {
+    alert('Veuillez remplir le champ obligatoire (Full name)');
+    return;
+  }
+
+  setDoctorsLoading(true);
+  try {
+    // Créer le docteur avec TOUS les champs
+    const response = await fetch('/api/doctors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_hospital: Number(id),
+        ...doctorForm,
+        langues: doctorForm.langues.length > 0 ? doctorForm.langues.join(',') : null,
+        note: Number(doctorForm.note),
+        experience_years: Number(doctorForm.experience_years),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Erreur HTTP' }));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
 
-    if (!doctorPhoto || !doctorCV) {
-      alert('Veuillez sélectionner la photo et le CV (obligatoires pour la création)');
-      return;
+    const result = await response.json();
+    if (result.success) {
+      const newId = result.id || result.id_medecin;
+      
+      // Upload photo et CV
+      if (doctorPhoto || doctorCV) {
+        const formData = new FormData();
+        formData.append('id_medecin', String(newId));
+        formData.append('id_hospital', String(id));
+        if (doctorPhoto) formData.append('photo', doctorPhoto);
+        if (doctorCV) formData.append('cv', doctorCV);
+
+        const uploadResponse = await fetch('/api/doctors', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) console.error("Fichiers non uploadés");
+      }
+
+      alert('✅ Docteur créé avec succès');
+      closeDoctorModal();
+      loadDoctors();
+    } else {
+      alert(result.error || 'Erreur lors de la création');
     }
+  } catch (err) {
+    console.error('Erreur:', err);
+    alert('Erreur lors de la création');
+  } finally {
+    setDoctorsLoading(false);
+  }
+};
 
-    setDoctorsLoading(true);
-    try {
-      // Créer le docteur
-      const response = await fetch('/api/doctors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_hospital: Number(id),
-          nom_medecin: doctorForm.nom_medecin,
-          langues: doctorForm.langues.length > 0 
-            ? doctorForm.langues.join(',')
-            : null,
-        }),
-      });
+const updateDoctor = async () => {
+  if (!editingDoctorId || !id) return;
+  
+  // DEBUG INFO
+  console.log("DEBUG UPDATE - IDs:", { hospital: id, doctor: editingDoctorId });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erreur HTTP' }));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  if (!doctorForm.nom_medecin) {
+    alert('Veuillez remplir le champ obligatoire (Full name)');
+    return;
+  }
+
+  setDoctorsLoading(true);
+  try {
+    const response = await fetch('/api/doctors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'update',
+        id_medecin: editingDoctorId,
+        id_hospital: Number(id),
+        ...doctorForm,
+        langues: doctorForm.langues.length > 0 ? doctorForm.langues.join(',') : null,
+        note: Number(doctorForm.note),
+        experience_years: Number(doctorForm.experience_years),
+      }),
+    });
+
+    if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+
+    const result = await response.json();
+    if (result.success) {
+      if (doctorPhoto || doctorCV) {
+        const formData = new FormData();
+        formData.append('id_medecin', String(editingDoctorId));
+        formData.append('id_hospital', String(id));
+        if (doctorPhoto) formData.append('photo', doctorPhoto);
+        if (doctorCV) formData.append('cv', doctorCV);
+
+        await fetch('/api/doctors', { method: 'POST', body: formData });
       }
 
-      const result = await response.json();
-      if (result.success) {
-        const newId = result.id;
-        
-        // Upload photo et CV
-        if (newId && (doctorPhoto || doctorCV)) {
-          const formData = new FormData();
-          formData.append('id_medecin', String(newId));
-          formData.append('id_hospital', String(id));
-          if (doctorPhoto) formData.append('photo', doctorPhoto);
-          if (doctorCV) formData.append('cv', doctorCV);
-
-          const uploadResponse = await fetch('/api/doctors', {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (!uploadResponse.ok) {
-            console.warn('File upload failed, but doctor was created');
-          }
-        }
-
-        alert('✅ Docteur créé avec succès');
-        closeDoctorModal();
-        loadDoctors();
-      } else {
-        alert(result.error || 'Erreur lors de la création');
-      }
-    } catch (err) {
-      console.error('Erreur lors de la création du docteur:', err);
-      alert(err instanceof Error ? err.message : 'Erreur lors de la création');
-    } finally {
-      setDoctorsLoading(false);
+      alert('✅ Docteur mis à jour avec succès');
+      closeDoctorModal();
+      loadDoctors();
+    } else {
+      alert(result.error || 'Erreur lors de la mise à jour');
     }
-  };
+  } catch (err) {
+    console.error('Erreur update:', err);
+    alert('Erreur lors de la mise à jour');
+  } finally {
+    setDoctorsLoading(false);
+  }
+};
 
-  const updateDoctor = async () => {
-    if (!editingDoctorId) return;
-    
-    if (!doctorForm.nom_medecin) {
-      alert('Veuillez remplir le champ obligatoire (Full name)');
-      return;
+const deleteDoctor = async (idDoctor: number) => {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce docteur ?')) return;
+
+  setDoctorsLoading(true);
+  try {
+    const response = await fetch('/api/doctors', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_medecin: idDoctor }),
+    });
+
+    if (response.ok) {
+      alert('✅ Docteur supprimé avec succès');
+      loadDoctors();
     }
+  } catch (err) {
+    console.error('Erreur suppression:', err);
+  } finally {
+    setDoctorsLoading(false);
+  }
+};
 
-    setDoctorsLoading(true);
-    try {
-      // Mettre à jour le docteur
-      const response = await fetch('/api/doctors', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_medecin: editingDoctorId,
-          nom_medecin: doctorForm.nom_medecin,
-          langues: doctorForm.langues.length > 0 
-            ? doctorForm.langues.join(',')
-            : null,
-        }),
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erreur HTTP' }));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
 
-      const result = await response.json();
-      if (result.success) {
-        // Upload photo et/ou CV si sélectionnés
-        if (doctorPhoto || doctorCV) {
-          const formData = new FormData();
-          formData.append('id_medecin', String(editingDoctorId));
-          formData.append('id_hospital', String(id));
-          if (doctorPhoto) formData.append('photo', doctorPhoto);
-          if (doctorCV) formData.append('cv', doctorCV);
 
-          const uploadResponse = await fetch('/api/doctors', {
-            method: 'POST',
-            body: formData,
-          });
 
-          if (!uploadResponse.ok) {
-            console.warn('File upload failed');
-          }
-        }
-
-        alert('✅ Docteur mis à jour avec succès');
-        closeDoctorModal();
-        loadDoctors();
-      } else {
-        alert(result.error || 'Erreur lors de la mise à jour');
-      }
-    } catch (err) {
-      console.error('Erreur lors de la mise à jour du docteur:', err);
-      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour');
-    } finally {
-      setDoctorsLoading(false);
-    }
-  };
-
-  const deleteDoctor = async (idDoctor: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce docteur ?')) return;
-
-    setDoctorsLoading(true);
-    try {
-      const response = await fetch('/api/doctors', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_medecin: idDoctor }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erreur HTTP' }));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        alert('✅ Docteur supprimé avec succès');
-        loadDoctors();
-      } else {
-        alert(result.error || 'Erreur lors de la suppression');
-      }
-    } catch (err) {
-      console.error('Erreur lors de la suppression:', err);
-      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression');
-    } finally {
-      setDoctorsLoading(false);
-    }
-  };
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
@@ -1438,14 +1483,18 @@ export default function HospitalEditPage() {
                               </button>
                             </td>
                             <td className="px-4 py-3">
-                              <img
-                                src={item.path || 'https://via.placeholder.com/100'}
-                                alt={item.nom || 'Media'}
-                                className="w-20 h-20 object-cover rounded"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100';
-                                }}
-                              />
+                          <img
+  src={
+    item.path 
+      ? `https://pro.medotra.com/${item.path.replace(/^\//, '')}` 
+      : 'https://via.placeholder.com/100'
+  }
+  alt={item.nom || 'Media'}
+  className="w-20 h-20 object-cover rounded"
+  onError={(e) => {
+    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100';
+  }}
+/>
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">
                               {item.langue === 'all' ? 'All' : item.langue || 'All'}
@@ -1862,7 +1911,7 @@ export default function HospitalEditPage() {
                         <div className="flex items-center gap-3">
                           {cm.profile_photo ? (
                             <img
-                              src={`https://webemtiyaz.com/${cm.profile_photo}`}
+                              src={`https://pro.medotra.com/${cm.profile_photo}`}
                               alt={cm.fullname}
                               className="h-10 w-10 rounded-full object-cover"
                               onError={(e) => {
@@ -2184,7 +2233,7 @@ export default function HospitalEditPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {doctor.photo ? (
                           <img
-                            src={`https://webemtiyaz.com/${doctor.photo}`}
+                            src={getDoctorMediaUrl(doctor.photo) || ''}
                             alt={doctor.nom_medecin}
                             className="h-10 w-10 rounded-full object-cover"
                             onError={(e) => {
@@ -2242,264 +2291,270 @@ export default function HospitalEditPage() {
         </div>
       )}
 
-      {/* Doctor Modal - Modern Design */}
-      {showDoctorModal && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
-          onClick={closeDoctorModal}
-        >
-          <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100"
-            onClick={(e) => e.stopPropagation()}
+   {/* Doctor Modal - Modern Design */}
+{showDoctorModal && (
+  <div 
+    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200"
+    onClick={closeDoctorModal}
+  >
+    <div 
+      className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header avec gradient vert */}
+      <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-5 border-b border-green-800">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              {editingDoctorId ? '✏️ Edit a doctor' : '➕ Add a doctor'}
+            </h2>
+            {/* Debug Info visible uniquement pour le développement */}
+            <p className="text-green-200 text-xs mt-1 font-mono">
+              Hosp ID: {id} | Doc ID: {editingDoctorId || 'New'}
+            </p>
+          </div>
+          <button
+            onClick={closeDoctorModal}
+            className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-colors"
+            aria-label="Close"
           >
-            {/* Header avec gradient vert */}
-            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-5 border-b border-green-800">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">
-                  {editingDoctorId ? '✏️ Edit a doctor' : '➕ Add a doctor'}
-                </h2>
-                <button
-                  onClick={closeDoctorModal}
-                  className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-colors"
-                  aria-label="Close"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Body avec scroll */}
+      <div className="p-6 space-y-6 overflow-y-auto flex-1 bg-white">
+        
+        {/* Section 1: Informations de base */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-green-700 uppercase tracking-wider border-b pb-1">Basic Information</h3>
+          
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Full name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none"
+              placeholder="Dr. John Doe"
+              value={doctorForm.nom_medecin}
+              onChange={(e) => setDoctorForm({ ...doctorForm, nom_medecin: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Sexe</label>
+              <select
+                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                value={doctorForm.sexe || 'M'}
+                onChange={(e) => setDoctorForm({ ...doctorForm, sexe: e.target.value })}
+              >
+                <option value="M">Masculin</option>
+                <option value="F">Féminin</option>
+              </select>
             </div>
-
-            {/* Body avec scroll */}
-            <div className="p-6 space-y-5 overflow-y-auto flex-1">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Full name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none"
-                    placeholder="Dr .."
-                    value={doctorForm.nom_medecin}
-                    onChange={(e) => setDoctorForm({ ...doctorForm, nom_medecin: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Photo <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="text"
-                        className="flex-1 border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none"
-                        value={doctorPhoto ? doctorPhoto.name : 'No file selected'}
-                        readOnly
-                        placeholder="Select a photo"
-                      />
-                      <input
-                        type="file"
-                        id="doctor-photo"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setDoctorPhoto(file);
-                          }
-                        }}
-                      />
-                      <label
-                        htmlFor="doctor-photo"
-                        className="px-4 py-3 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-200 transition-all cursor-pointer font-medium"
-                      >
-                        Browse
-                      </label>
-                    </div>
-                    {/* Afficher la photo existante si on édite et qu'aucune nouvelle photo n'est sélectionnée */}
-                    {!doctorPhoto && editingDoctor?.photo && (
-                      <div className="mt-2 flex items-center gap-3">
-                        <img
-                          src={`https://webemtiyaz.com/${editingDoctor.photo}`}
-                          alt="Current photo"
-                          className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                        <div className="text-xs text-gray-600">
-                          Photo actuelle
-                        </div>
-                      </div>
-                    )}
-                    {/* Afficher la nouvelle photo sélectionnée */}
-                    {doctorPhoto && (
-                      <div className="mt-2 flex items-center gap-3">
-                        <img
-                          src={URL.createObjectURL(doctorPhoto)}
-                          alt="Preview"
-                          className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
-                        />
-                        <div className="text-xs text-green-600">
-                          {doctorPhoto.name} ({(doctorPhoto.size / 1024).toFixed(2)} KB)
-                        </div>
-                      </div>
-                    )}
-                    <p className="mt-2 text-xs text-gray-500">Minimum dimensions (300x300)</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Doctor's CV & Experiences (PDF) <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="text"
-                        className="flex-1 border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none"
-                        value={doctorCV ? doctorCV.name : 'No file selected'}
-                        readOnly
-                        placeholder="Select a PDF"
-                      />
-                      <input
-                        type="file"
-                        id="doctor-cv"
-                        accept=".pdf"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setDoctorCV(file);
-                          }
-                        }}
-                      />
-                      <label
-                        htmlFor="doctor-cv"
-                        className="px-4 py-3 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-200 transition-all cursor-pointer font-medium"
-                      >
-                        Browse
-                      </label>
-                    </div>
-                    {/* Afficher le CV existant si on édite et qu'aucun nouveau CV n'est sélectionné */}
-                    {!doctorCV && editingDoctor?.cv && (
-                      <div className="mt-2">
-                        <a
-                          href={`https://webemtiyaz.com/${editingDoctor.cv}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          📄 Voir le CV actuel
-                        </a>
-                      </div>
-                    )}
-                    {/* Afficher le nouveau CV sélectionné */}
-                    {doctorCV && (
-                      <div className="mt-2 text-xs text-green-600">
-                        {doctorCV.name} ({(doctorCV.size / 1024).toFixed(2)} KB)
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Language Selection
-                  </label>
-                  <div className="border-2 border-gray-200 rounded-xl p-4 max-h-64 overflow-y-auto bg-gray-50">
-                    {LANGUAGES.map((lang) => (
-                      <label
-                        key={lang}
-                        className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={doctorForm.langues.includes(lang)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setDoctorForm({
-                                ...doctorForm,
-                                langues: [...doctorForm.langues, lang],
-                              });
-                            } else {
-                              setDoctorForm({
-                                ...doctorForm,
-                                langues: doctorForm.langues.filter(l => l !== lang),
-                              });
-                            }
-                          }}
-                          className="w-4 h-4 text-green-600 focus:ring-green-500"
-                        />
-                        <span className="text-sm text-gray-700">{lang}</span>
-                        {doctorForm.langues.includes(lang) && (
-                          <span className="ml-auto text-green-600">✓</span>
-                        )}
-                      </label>
-                    ))}
-                  </div>
-                  {doctorForm.langues.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {doctorForm.langues.map((lang) => (
-                        <span
-                          key={lang}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
-                        >
-                          {lang}
-                          <button
-                            onClick={() => {
-                              setDoctorForm({
-                                ...doctorForm,
-                                langues: doctorForm.langues.filter(l => l !== lang),
-                              });
-                            }}
-                            className="hover:text-green-900"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Nationalité</label>
+              <input
+                type="text"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                placeholder="Ex: Française"
+                value={doctorForm.nationalite}
+                onChange={(e) => setDoctorForm({ ...doctorForm, nationalite: e.target.value })}
+              />
             </div>
+          </div>
+        </div>
 
-            {/* Footer avec boutons modernes */}
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <p className="text-xs text-gray-500">
-                <span className="text-red-500">*</span> Required fields
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={closeDoctorModal}
-                  className="px-6 py-2.5 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-medium shadow-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={editingDoctorId ? updateDoctor : createDoctor}
-                  disabled={doctorsLoading}
-                  className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg hover:shadow-xl"
-                >
-                  {doctorsLoading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Enregistrement...
-                    </span>
+        {/* Section 2: Contact & Spécialité */}
+        <div className="space-y-4 pt-2">
+          <h3 className="text-sm font-bold text-green-700 uppercase tracking-wider border-b pb-1">Professional Details</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+              <input
+                type="email"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                placeholder="doctor@example.com"
+                value={doctorForm.email}
+                onChange={(e) => setDoctorForm({ ...doctorForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Téléphone</label>
+              <input
+                type="tel"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                placeholder="+33..."
+                value={doctorForm.telephone}
+                onChange={(e) => setDoctorForm({ ...doctorForm, telephone: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Spécialité</label>
+              <select
+                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                value={doctorForm.specialite}
+                onChange={(e) => setDoctorForm({ ...doctorForm, specialite: e.target.value })}
+              >
+                <option value="">Sélectionner</option>
+                {doctorCategories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+         
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Années d'expérience</label>
+              <input
+                type="number"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+                value={doctorForm.experience_years}
+                onChange={(e) => setDoctorForm({ ...doctorForm, experience_years: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Qualifications</label>
+              <input
+                type="text"
+                placeholder="Diplômes, Certificats..."
+                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+                value={doctorForm.qualifications}
+                onChange={(e) => setDoctorForm({ ...doctorForm, qualifications: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Biographie & Réalisations */}
+        <div className="space-y-4 pt-2">
+          <h3 className="text-sm font-bold text-green-700 uppercase tracking-wider border-b pb-1">Biography & Achievements</h3>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Description / Bio</label>
+            <textarea
+              rows={3}
+              className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+              placeholder="Parlez-nous du parcours du docteur..."
+              value={doctorForm.description}
+              onChange={(e) => setDoctorForm({ ...doctorForm, description: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Réalisations majeures</label>
+            <textarea
+              rows={2}
+              className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+              placeholder="Opérations réussies, prix, récompenses..."
+              value={doctorForm.realisations}
+              onChange={(e) => setDoctorForm({ ...doctorForm, realisations: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Section 4: Médias (Photo & CV) */}
+        <div className="space-y-4 pt-2">
+          <h3 className="text-sm font-bold text-green-700 uppercase tracking-wider border-b pb-1">Media Files</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Photo Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Photo</label>
+              <div className="flex flex-col gap-3">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                  {doctorPhoto ? (
+                    <img src={URL.createObjectURL(doctorPhoto)} className="h-full w-full object-cover rounded-xl" />
+                  ) : editingDoctor?.photo ? (
+                    <img src={getDoctorMediaUrl(editingDoctor.photo) || ''} className="h-full w-full object-cover rounded-xl" />
                   ) : (
-                    editingDoctorId ? '💾 Update' : '✨ Submit'
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <p className="text-xs text-gray-500">Click to upload</p>
+                    </div>
                   )}
-                </button>
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && setDoctorPhoto(e.target.files[0])} />
+                </label>
+                {(doctorPhoto || editingDoctor?.photo) && <p className="text-[10px] text-center text-green-600">Photo active</p>}
+              </div>
+            </div>
+
+            {/* CV Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">CV (PDF)</label>
+              <div className="flex flex-col gap-3">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-2">
+                    <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <p className="text-xs text-gray-500">{doctorCV ? doctorCV.name : (editingDoctor?.cv ? 'CV Existante' : 'Upload PDF')}</p>
+                  </div>
+                  <input type="file" className="hidden" accept=".pdf" onChange={(e) => e.target.files?.[0] && setDoctorCV(e.target.files[0])} />
+                </label>
+                {editingDoctor?.cv && !doctorCV && (
+                   <a href={getDoctorMediaUrl(editingDoctor.cv) || ''} target="_blank" className="text-[10px] text-blue-600 text-center underline">Voir le CV actuel</a>
+                )}
               </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Section 5: Langues */}
+        <div className="space-y-4 pt-2">
+          <h3 className="text-sm font-bold text-green-700 uppercase tracking-wider border-b pb-1">Languages</h3>
+          <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {LANGUAGES.map((lang) => (
+              <label key={lang} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={doctorForm.langues.includes(lang)}
+                  onChange={(e) => {
+                    const updated = e.target.checked 
+                      ? [...doctorForm.langues, lang]
+                      : doctorForm.langues.filter(l => l !== lang);
+                    setDoctorForm({ ...doctorForm, langues: updated });
+                  }}
+                  className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                />
+                <span className="text-xs text-gray-700">{lang}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer fixe */}
+      <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <p className="text-[11px] text-gray-500 italic">
+          * Required fields. All data is securely stored.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={closeDoctorModal}
+            className="px-6 py-2.5 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium shadow-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={editingDoctorId ? updateDoctor : createDoctor}
+            disabled={doctorsLoading}
+            className="px-8 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-lg"
+          >
+            {doctorsLoading ? 'Saving...' : editingDoctorId ? '💾 Update Doctor' : '✨ Create Doctor'}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Other tabs placeholder */}
       {activeTab !== 'Profile' && activeTab !== 'Treatments' && activeTab !== 'Media' && activeTab !== 'Hotels' && activeTab !== 'Case Managers' && activeTab !== 'Doctors' && (

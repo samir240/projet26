@@ -1,7 +1,7 @@
 <?php
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
 include "config.php";
@@ -17,23 +17,22 @@ if ($method === 'OPTIONS') {
     GET
 ====================== */
 if ($method === 'GET') {
+
     if (isset($_GET['id'])) {
         $stmt = $pdo->prepare("SELECT * FROM doctors WHERE id_medecin = ?");
         $stmt->execute([$_GET['id']]);
-        echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
+        echo json_encode($stmt->fetch(PDO::FETCH_ASSOC) ?: []);
         exit;
     }
-    
-    // Filtrer par id_hospital si fourni
+
     if (isset($_GET['id_hospital'])) {
         $stmt = $pdo->prepare("SELECT * FROM doctors WHERE id_hospital = ? ORDER BY id_medecin DESC");
         $stmt->execute([$_GET['id_hospital']]);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         exit;
     }
-    
-    $stmt = $pdo->query("SELECT * FROM doctors ORDER BY id_medecin DESC");
-    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+    echo json_encode([]);
     exit;
 }
 
@@ -53,32 +52,27 @@ if ($method === 'POST') {
             exit;
         }
 
-        // Structure : uploads/hospital_X/doctors/
         $uploadDir = "uploads/hospital_" . $id_hospital . "/doctors/";
-        if (!file_exists($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
+        if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
 
         $updates = [];
         $params = [];
 
-        // Upload de la Photo
+        // Upload photo
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
             $photoExt = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
             $photoName = "doc_" . $id_medecin . "_pic_" . time() . "." . $photoExt;
             $photoTarget = $uploadDir . $photoName;
-            
             if (move_uploaded_file($_FILES['photo']['tmp_name'], $photoTarget)) {
                 $updates[] = "photo = ?";
                 $params[] = $photoTarget;
             }
         }
 
-        // Upload du CV (PDF)
+        // Upload CV
         if (isset($_FILES['cv']) && $_FILES['cv']['error'] === UPLOAD_ERR_OK) {
             $cvName = "doc_" . $id_medecin . "_cv_" . time() . ".pdf";
             $cvTarget = $uploadDir . $cvName;
-            
             if (move_uploaded_file($_FILES['cv']['tmp_name'], $cvTarget)) {
                 $updates[] = "cv = ?";
                 $params[] = $cvTarget;
@@ -103,17 +97,32 @@ if ($method === 'POST') {
         exit;
     }
 
-    /* ---------- DELETE ---------- */
+    // ---------- DELETE ----------
     if (isset($data['action']) && $data['action'] === 'delete') {
-        $stmt = $pdo->prepare("DELETE FROM doctors WHERE id_medecin = ?");
-        $stmt->execute([$data['id_medecin']]);
+        if (!isset($data['id_medecin'], $data['id_hospital'])) {
+            echo json_encode(["error" => "id_medecin et id_hospital sont requis"]);
+            exit;
+        }
+        $stmt = $pdo->prepare("DELETE FROM doctors WHERE id_medecin = ? AND id_hospital = ?");
+        $stmt->execute([$data['id_medecin'], $data['id_hospital']]);
         echo json_encode(["success" => true, "type" => "delete"]);
         exit;
     }
 
-    /* ---------- UPDATE ---------- */
+    // ---------- UPDATE ----------
     if (isset($data['action']) && $data['action'] === 'update') {
-        $allowed = ['id_hospital','nom_medecin','specialite','langues','description','note','reviews','sexe','nationalite','email','telephone','is_active'];
+        if (!isset($data['id_medecin'], $data['id_hospital'])) {
+            echo json_encode(["error" => "id_medecin et id_hospital sont requis"]);
+            exit;
+        }
+
+        // Ajout des nouveaux champs dans la liste autorisée
+        $allowed = [
+            'nom_medecin', 'specialite', 'qualifications', 'experience_years', 
+            'realisations', 'langues', 'description', 'note', 'reviews', 
+            'sexe', 'nationalite', 'email', 'telephone', 'is_active'
+        ];
+        
         $fields = [];
         $values = [];
         foreach ($allowed as $field) {
@@ -122,24 +131,41 @@ if ($method === 'POST') {
                 $values[] = $data[$field];
             }
         }
+
+        if (empty($fields)) {
+            echo json_encode(["error" => "Aucun champ à modifier"]);
+            exit;
+        }
+
         $values[] = $data['id_medecin'];
-        $stmt = $pdo->prepare("UPDATE doctors SET " . implode(', ', $fields) . " WHERE id_medecin = ?");
+        $values[] = $data['id_hospital']; 
+        
+        $stmt = $pdo->prepare("UPDATE doctors SET " . implode(', ', $fields) . " WHERE id_medecin = ? AND id_hospital = ?");
         $stmt->execute($values);
+        
         echo json_encode(["success" => true, "type" => "update"]);
         exit;
     }
 
-    /* ---------- CREATE ---------- */
+    // ---------- CREATE ----------
+    if (!isset($data['id_hospital'], $data['nom_medecin'])) {
+        echo json_encode(["error" => "id_hospital et nom_medecin sont requis"]);
+        exit;
+    }
+
     $stmt = $pdo->prepare("
         INSERT INTO doctors
-        (id_hospital, nom_medecin, specialite, langues, description, note, reviews, sexe, nationalite, email, telephone, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id_hospital, nom_medecin, specialite, qualifications, experience_years, realisations, langues, description, note, reviews, sexe, nationalite, email, telephone, is_active, photo, cv)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-
+    
     $stmt->execute([
-        $data['id_hospital'] ?? null,
+        $data['id_hospital'],
         $data['nom_medecin'],
         $data['specialite'] ?? null,
+        $data['qualifications'] ?? null,
+        $data['experience_years'] ?? 0,
+        $data['realisations'] ?? null,
         $data['langues'] ?? null,
         $data['description'] ?? null,
         $data['note'] ?? 0,
@@ -148,9 +174,13 @@ if ($method === 'POST') {
         $data['nationalite'] ?? null,
         $data['email'] ?? null,
         $data['telephone'] ?? null,
-        $data['is_active'] ?? 1
+        $data['is_active'] ?? 1,
+        $data['photo'] ?? null,
+        $data['cv'] ?? null
     ]);
 
     echo json_encode(["success" => true, "type" => "create", "id" => $pdo->lastInsertId()]);
     exit;
 }
+
+echo json_encode(["error" => "Méthode non autorisée"]);

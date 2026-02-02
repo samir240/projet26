@@ -2,7 +2,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const res = await fetch("https://webemtiyaz.com/api/create_request.php", {
+    const res = await fetch("https://pro.medotra.com/api/create_request.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // URL de ton nouveau script PHP en mode Base64
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/hospital_poto.php';
+const PHP_API_URL = 'https://pro.medotra.com/app/http/api/hospital_poto.php';
 
 /**
  * GET : Récupérer les médias d'un hôpital

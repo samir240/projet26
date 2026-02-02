@@ -33,7 +33,7 @@ export default function PatientPage() {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`https://webemtiyaz.com/api/ia/patients.php?id=${id}`)
+    fetch(`https://pro.medotra.com/app/http/api/patients.php?id=${id}`)
       .then(res => res.json())
       .then(data => {
         if (!data || !data.id_patient) {

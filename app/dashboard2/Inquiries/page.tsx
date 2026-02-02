@@ -39,7 +39,7 @@ export default function RequestsPage() {
      FETCH DATA
   ===================== */
   useEffect(() => {
-    fetch('https://webemtiyaz.com/api/ia/requests.php')
+    fetch('https://pro.medotra.com/app/http/api/requests.php')
       .then((res) => res.json())
       .then((data) => {
         setRequests(data);

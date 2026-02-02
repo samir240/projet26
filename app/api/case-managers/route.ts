@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/case_managers.php';
+const PHP_API_URL = 'https://pro.medotra.com/app/http/api/case_managers.php';
 
+/**
+ * GET : Récupérer les Case Managers
+ */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -12,7 +15,7 @@ export async function GET(req: NextRequest) {
     if (id) url += `?id=${id}`;
     else if (id_hospital) url += `?id_hospital=${id_hospital}`;
     
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error: any) {
@@ -20,16 +23,21 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * POST : Gère l'Upload (FormData) et les Actions (JSON)
+ */
 export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get('content-type') || '';
     
-    // Si c'est FormData (upload de fichiers)
+    // CAS A : Upload de fichier (Multipart FormData)
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
       
       const res = await fetch(PHP_API_URL, {
         method: 'POST',
+        // IMPORTANT: On ne définit PAS de Content-Type ici. 
+        // Le moteur fetch le fera automatiquement avec le bon "boundary".
         body: formData,
       });
       
@@ -37,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(data);
     }
     
-    // Sinon, c'est du JSON normal (Create / Update / Delete)
+    // CAS B : Opérations standards (Create / Update / Delete)
     const body = await req.json();
     
     const res = await fetch(PHP_API_URL, {
@@ -49,10 +57,13 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Erreur serveur API", details: error.message }, { status: 500 });
   }
 }
 
+/**
+ * DELETE : Proxy vers l'action delete du PHP
+ */
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -65,7 +76,10 @@ export async function DELETE(req: NextRequest) {
     const res = await fetch(PHP_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', id_case_manager: parseInt(id) }),
+      body: JSON.stringify({ 
+        action: 'delete', 
+        id_case_manager: id // Le PHP gère le parseInt
+      }),
     });
     
     const data = await res.json();
