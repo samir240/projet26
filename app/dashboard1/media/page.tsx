@@ -1,73 +1,73 @@
 "use client";
+
 import React, { useState } from 'react';
 
-export default function MultiUploadBase64Page() {
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
+export default function TestUploadPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
 
-  // Fonction pour transformer un fichier en texte (Base64)
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  };
+  const handleUpload = async () => {
+    if (!file) return alert("Sélectionnez un fichier !");
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (files.length === 0) return;
+    setLoading(true);
+    setResult(null);
 
-    setUploading(true);
+    // Préparation des données
+    const formData = new FormData();
+    formData.append('type', 'casemanager_photo'); // Le type attendu par ton switch PHP
+    formData.append('entity_id', '1');       // ID du manager à tester (ex: 1)
+    formData.append('file', file);           // Le fichier lui-même
 
     try {
-      // 1. On transforme toutes les images en tableau de texte
-      const base64Images = await Promise.all(files.map(file => fileToBase64(file)));
-
-      // 2. On prépare l'objet JSON (comme pour tes agents commerciaux)
-      const payload = {
-        id_hospital: 2, // ID de test
-        langue: 'all',
-        images: base64Images 
-      };
-
-      // 3. Envoi en JSON pur
-      const res = await fetch('/api/poto', {
+      // APPEL À LA ROUTE NEXT.JS (Proxy)
+      const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       const data = await res.json();
-      alert("Upload Base64 terminé !");
-      console.log(data);
+      setResult(data);
     } catch (err) {
-      console.error("Erreur upload:", err);
+      setResult({ success: false, message: "Erreur lors de l'appel API" });
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">🚀 Upload Hospital (Mode Base64)</h1>
-      <form onSubmit={handleUpload} className="space-y-4">
+    <div className="p-10 max-w-lg mx-auto">
+      <div className="bg-white p-6 rounded-xl shadow-md border">
+        <h1 className="text-xl font-bold mb-4">Tester l'Upload via Route.ts</h1>
+        
         <input 
           type="file" 
-          multiple 
-          accept="image/*"
-          onChange={(e) => setFiles(Array.from(e.target.files || []))}
-          className="block w-full text-sm border border-gray-300 rounded-lg p-2"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="block w-full text-sm text-gray-500 mb-4 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
         />
-        <button 
-          type="submit" 
-          disabled={uploading || files.length === 0}
-          className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+
+        <button
+          onClick={handleUpload}
+          disabled={loading || !file}
+          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
         >
-          {uploading ? "Conversion & Envoi..." : `Envoyer ${files.length} image(s)`}
+          {loading ? 'Téléchargement...' : 'Envoyer pour le Manager ID: 1'}
         </button>
-      </form>
+
+        {result && (
+          <div className={`mt-6 p-4 rounded text-sm ${result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <pre className="whitespace-pre-wrap">
+              {JSON.stringify(result, null, 2)}
+            </pre>
+            {result.success && result.path && (
+              <div className="mt-2">
+                <p className="font-bold">Aperçu du chemin :</p>
+                <code className="text-xs text-blue-600">https://pro.medotra.com/{result.path}</code>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

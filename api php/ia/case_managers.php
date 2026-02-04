@@ -4,6 +4,7 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
+// On remonte de 3 niveaux pour trouver config.php ¨¤ la racine
 include "config.php";
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -24,7 +25,6 @@ if ($method === 'GET') {
         exit;
     }
     
-    // Lister par h么pital
     if (isset($_GET['id_hospital'])) {
         $stmt = $pdo->prepare("SELECT * FROM case_managers WHERE id_hospital = ?");
         $stmt->execute([$_GET['id_hospital']]);
@@ -42,27 +42,40 @@ if ($method === 'GET') {
 ====================== */
 if ($method === 'POST') {
 
-    // --- A. UPLOAD PHOTO ---
+    // --- A. UPLOAD PHOTO (Multipart/Form-Data) ---
     if (isset($_FILES['profile_photo'])) {
         $id_cm = $_POST['id_case_manager'] ?? null;
-        $id_hosp = $_POST['id_hospital'] ?? null;
 
-        if (!$id_cm || !$id_hosp) {
-            echo json_encode(["error" => "id_case_manager et id_hospital manquants"]);
+        if (!$id_cm) {
+            echo json_encode(["error" => "id_case_manager manquant"]);
             exit;
         }
 
-        $dir = "uploads/hospital_" . $id_hosp . "/case_managers/";
-        if (!file_exists($dir)) mkdir($dir, 0777, true);
+        // Dossier physique : uploads/case_managers/cm_ID/
+        $folderName = "cm_" . $id_cm;
+        $uploadDir = "../../../uploads/case_managers/" . $folderName . "/";
+        
+        // Dossier pour la BDD : uploads/case_managers/cm_ID/
+        $dbPathDir = "uploads/case_managers/" . $folderName . "/";
+
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
 
         $ext = pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION);
-        $fileName = "cm_" . $id_cm . "_" . time() . "." . $ext;
-        $target = $dir . $fileName;
+        $fileName = "photo_" . time() . "." . $ext;
+        $targetFile = $uploadDir . $fileName;
 
-        if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $target)) {
+        if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $targetFile)) {
+            // On enregistre le chemin propre dans la BDD
+            $dbFullPath = $dbPathDir . $fileName;
+            
             $stmt = $pdo->prepare("UPDATE case_managers SET profile_photo = ? WHERE id_case_manager = ?");
-            $stmt->execute([$target, $id_cm]);
-            echo json_encode(["success" => true, "path" => $target]);
+            $stmt->execute([$dbFullPath, $id_cm]);
+            
+            echo json_encode(["success" => true, "path" => $dbFullPath]);
+        } else {
+            echo json_encode(["error" => "Erreur lors du d¨¦placement du fichier"]);
         }
         exit;
     }
@@ -73,6 +86,7 @@ if ($method === 'POST') {
 
     // DELETE
     if (isset($data['action']) && $data['action'] === 'delete') {
+        // Optionnel : Tu pourrais ici supprimer le dossier physique cm_ID avant de supprimer la ligne
         $stmt = $pdo->prepare("DELETE FROM case_managers WHERE id_case_manager = ?");
         $stmt->execute([$data['id_case_manager']]);
         echo json_encode(["success" => true]);
@@ -97,17 +111,18 @@ if ($method === 'POST') {
     }
 
     // CREATE
-    $stmt = $pdo->prepare("INSERT INTO case_managers (id_hospital, fullname, email, phone, countries_concerned, id_coordinator, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO case_managers (id_hospital, fullname, email, phone, countries_concerned, id_coordinator) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $data['id_hospital'],
         $data['fullname'],
         $data['email'] ?? null,
         $data['phone'] ?? null,
         $data['countries_concerned'] ?? null,
-        $data['id_coordinator'] ?? null,
-        $data['is_active'] ?? 1
+        $data['id_coordinator'] ?? null
     ]);
     
     echo json_encode(["success" => true, "id" => $pdo->lastInsertId()]);
     exit;
 }
+
+echo json_encode(["error" => "M¨¦thode non autoris¨¦e"]);

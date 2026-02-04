@@ -189,18 +189,39 @@ export default function DoctorsPage() {
       if (result.success) {
         const doctorId = result.id;
         
-        // Upload photo et CV si des fichiers ont été sélectionnés
-        if ((photoFile || cvFile) && doctorId) {
-          const formData = new FormData();
-          formData.append('id_medecin', doctorId.toString());
-          formData.append('id_hospital', user.id_hospital.toString());
-          if (photoFile) formData.append('photo', photoFile);
-          if (cvFile) formData.append('cv', cvFile);
+        // Upload photo et CV via /api/upload
+        if (photoFile && doctorId) {
+          const photoFormData = new FormData();
+          photoFormData.append('type', 'doctor_photo');
+          photoFormData.append('entity_id', doctorId.toString());
+          photoFormData.append('file', photoFile);
 
-          await fetch('/api/doctors', {
+          const photoResponse = await fetch('/api/upload', {
             method: 'POST',
-            body: formData
+            body: photoFormData
           });
+
+          const photoResult = await photoResponse.json();
+          if (!photoResult.success) {
+            console.warn('Photo upload failed:', photoResult);
+          }
+        }
+
+        if (cvFile && doctorId) {
+          const cvFormData = new FormData();
+          cvFormData.append('type', 'doctor_cv');
+          cvFormData.append('entity_id', doctorId.toString());
+          cvFormData.append('file', cvFile);
+
+          const cvResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: cvFormData
+          });
+
+          const cvResult = await cvResponse.json();
+          if (!cvResult.success) {
+            console.warn('CV upload failed:', cvResult);
+          }
         }
 
         alert("Docteur ajouté avec succès !");
@@ -253,18 +274,39 @@ export default function DoctorsPage() {
 
       const result = await res.json();
       if (result.success) {
-        // Upload photo et/ou CV si des fichiers ont été sélectionnés
-        if ((editPhotoFile || editCvFile) && editDoctor.id_medecin && user?.id_hospital) {
-          const formData = new FormData();
-          formData.append('id_medecin', editDoctor.id_medecin.toString());
-          formData.append('id_hospital', user.id_hospital.toString());
-          if (editPhotoFile) formData.append('photo', editPhotoFile);
-          if (editCvFile) formData.append('cv', editCvFile);
+        // Upload photo et/ou CV via /api/upload
+        if (editPhotoFile && editDoctor.id_medecin) {
+          const photoFormData = new FormData();
+          photoFormData.append('type', 'doctor_photo');
+          photoFormData.append('entity_id', editDoctor.id_medecin.toString());
+          photoFormData.append('file', editPhotoFile);
 
-          await fetch('/api/doctors', {
+          const photoResponse = await fetch('/api/upload', {
             method: 'POST',
-            body: formData
+            body: photoFormData
           });
+
+          const photoResult = await photoResponse.json();
+          if (!photoResult.success) {
+            console.warn('Photo upload failed:', photoResult);
+          }
+        }
+
+        if (editCvFile && editDoctor.id_medecin) {
+          const cvFormData = new FormData();
+          cvFormData.append('type', 'doctor_cv');
+          cvFormData.append('entity_id', editDoctor.id_medecin.toString());
+          cvFormData.append('file', editCvFile);
+
+          const cvResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: cvFormData
+          });
+
+          const cvResult = await cvResponse.json();
+          if (!cvResult.success) {
+            console.warn('CV upload failed:', cvResult);
+          }
         }
 
         alert("Docteur modifié avec succès !");

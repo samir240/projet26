@@ -1,0 +1,324 @@
+{
+    "allergologie": {
+        "icon": "fa-allergies",
+        "color": "#5bb88f",
+        "slug": "allergologie",
+        "title": {"fr": "Allergologie", "ar": "الحساسية", "en": "Allergology"},
+        "desc": {"fr": "Diagnostic et traitement des allergies", "ar": "تشخيص وعلاج الحساسية", "en": "Diagnosis and treatment of allergies"}
+    },
+    "anesthesie-reanimation": {
+        "icon": "fa-heartbeat",
+        "color": "#5bb88f",
+        "slug": "anesthesie-reanimation",
+        "title": {"fr": "Anesthésie – Réanimation", "ar": "التخدير والإنعاش", "en": "Anesthesia – Intensive Care"},
+        "desc": {"fr": "Soins anesthésiques et réanimation", "ar": "رعاية التخدير والإنعاش", "en": "Anesthetic care and resuscitation"}
+    },
+    "angiologie-phlebologie": {
+        "icon": "fa-wave-square",
+        "color": "#5bb88f",
+        "slug": "angiologie-phlebologie",
+        "title": {"fr": "Angiologie et Phlébologie", "ar": "أمراض الأوعية الدموية", "en": "Angiology & Phlebology"},
+        "desc": {"fr": "Veines et vaisseaux sanguins", "ar": "الأوردة والأوعية الدموية", "en": "Veins and blood vessels"}
+    },
+    "bariatrique": {
+        "icon": "fa-weight",
+        "color": "#5bb88f",
+        "slug": "bariatrique",
+        "title": {"fr": "Bariatrique", "ar": "جراحة السمنة", "en": "Bariatric Surgery"},
+        "desc": {"fr": "Chirurgie de l'obésité", "ar": "جراحة علاج البدانة", "en": "Obesity surgery"}
+    },
+    "cardiologie-cardio-vasculaire": {
+        "icon": "fa-heart",
+        "color": "#5bb88f",
+        "slug": "cardiologie-cardio-vasculaire",
+        "title": {"fr": "Cardiologie et Cardio-vasculaire", "ar": "أمراض القلب والأوعية الدموية", "en": "Cardiology & Cardiovascular"},
+        "desc": {"fr": "Maladies du cœur et des vaisseaux", "ar": "أمراض القلب والأوعية", "en": "Heart and vascular diseases"}
+    },
+    "check-up-medical": {
+        "icon": "fa-stethoscope",
+        "color": "#5bb88f",
+        "slug": "check-up-medical",
+        "title": {"fr": "Check-up Médical", "ar": "الفحص الطبي الشامل", "en": "Medical Check-up"},
+        "desc": {"fr": "Bilan de santé complet", "ar": "فحص صحي شامل", "en": "Complete health assessment"}
+    },
+    "chirurgie-colorectale": {
+        "icon": "fa-hospital",
+        "color": "#5bb88f",
+        "slug": "chirurgie-colorectale",
+        "title": {"fr": "Chirurgie Colorectale", "ar": "جراحة القولون والمستقيم", "en": "Colorectal Surgery"},
+        "desc": {"fr": "Chirurgie du côlon et du rectum", "ar": "جراحة القولون والمستقيم", "en": "Colon and rectum surgery"}
+    },
+    "chirurgie-esthetique": {
+        "icon": "fa-user-injured",
+        "color": "#5bb88f",
+        "slug": "chirurgie-esthetique",
+        "title": {"fr": "Chirurgie Esthétique", "ar": "الجراحة التجميلية", "en": "Cosmetic Surgery"},
+        "desc": {"fr": "Rhinoplastie, lifting, liposuccion", "ar": "تجميل الأنف، شد الوجه، شفط الدهون", "en": "Rhinoplasty, facelift, liposuction"}
+    },
+    "chirurgie-generale": {
+        "icon": "fa-procedures",
+        "color": "#5bb88f",
+        "slug": "chirurgie-generale",
+        "title": {"fr": "Chirurgie Générale", "ar": "الجراحة العامة", "en": "General Surgery"},
+        "desc": {"fr": "Interventions chirurgicales générales", "ar": "العمليات الجراحية العامة", "en": "General surgical procedures"}
+    },
+    "chirurgie-maxillo-faciale": {
+        "icon": "fa-head-side-mask",
+        "color": "#5bb88f",
+        "slug": "chirurgie-maxillo-faciale",
+        "title": {"fr": "Chirurgie Maxillo-Faciale", "ar": "جراحة الوجه والفكين", "en": "Maxillofacial Surgery"},
+        "desc": {"fr": "Chirurgie du visage et des mâchoires", "ar": "جراحة الوجه والفكين", "en": "Face and jaw surgery"}
+    },
+    "chirurgie-pediatrique": {
+        "icon": "fa-baby",
+        "color": "#5bb88f",
+        "slug": "chirurgie-pediatrique",
+        "title": {"fr": "Chirurgie Pédiatrique", "ar": "جراحة الأطفال", "en": "Pediatric Surgery"},
+        "desc": {"fr": "Chirurgie pour enfants", "ar": "جراحة للأطفال", "en": "Surgery for children"}
+    },
+    "chirurgie-spinale": {
+        "icon": "fa-bone",
+        "color": "#5bb88f",
+        "slug": "chirurgie-spinale",
+        "title": {"fr": "Chirurgie de la Colonne Vertébrale / Spinale", "ar": "جراحة العمود الفقري", "en": "Spine Surgery"},
+        "desc": {"fr": "Interventions sur la colonne vertébrale", "ar": "عمليات العمود الفقري", "en": "Spinal interventions"}
+    },
+    "cosmetologie": {
+        "icon": "fa-spa",
+        "color": "#5bb88f",
+        "slug": "cosmetologie",
+        "title": {"fr": "Cosmétologie", "ar": "التجميل", "en": "Cosmetology"},
+        "desc": {"fr": "Soins esthétiques non chirurgicaux", "ar": "العناية التجميلية غير الجراحية", "en": "Non-surgical aesthetic care"}
+    },
+    "dentaire": {
+        "icon": "fa-tooth",
+        "color": "#5bb88f",
+        "slug": "dentaire",
+        "title": {"fr": "Traitement dentaire", "ar": "علاج الأسنان", "en": "Dental Treatment"},
+        "desc": {"fr": "Implants, facettes, blanchiment", "ar": "زراعة، فينير، تبييض", "en": "Implants, veneers, whitening"}
+    },
+    "dermatologie": {
+        "icon": "fa-hand-holding-medical",
+        "color": "#5bb88f",
+        "slug": "dermatologie",
+        "title": {"fr": "Dermatologie", "ar": "الأمراض الجلدية", "en": "Dermatology"},
+        "desc": {"fr": "Maladies de la peau", "ar": "أمراض الجلد", "en": "Skin diseases"}
+    },
+    "endocrinologie": {
+        "icon": "fa-disease",
+        "color": "#5bb88f",
+        "slug": "endocrinologie",
+        "title": {"fr": "Endocrinologie", "ar": "الغدد الصماء", "en": "Endocrinology"},
+        "desc": {"fr": "Troubles hormonaux et métaboliques", "ar": "اضطرابات الهرمونات والتمثيل الغذائي", "en": "Hormonal and metabolic disorders"}
+    },
+    "gastro-enterologie": {
+        "icon": "fa-stomach",
+        "color": "#5bb88f",
+        "slug": "gastro-enterologie",
+        "title": {"fr": "Gastro-entérologie", "ar": "أمراض الجهاز الهضمي", "en": "Gastroenterology"},
+        "desc": {"fr": "Maladies digestives", "ar": "أمراض الجهاز الهضمي", "en": "Digestive diseases"}
+    },
+    "genetique-medicale": {
+        "icon": "fa-dna",
+        "color": "#5bb88f",
+        "slug": "genetique-medicale",
+        "title": {"fr": "Génétique médicale", "ar": "الوراثة الطبية", "en": "Medical Genetics"},
+        "desc": {"fr": "Diagnostic génétique et conseil", "ar": "التشخيص الوراثي والاستشارة", "en": "Genetic diagnosis and counseling"}
+    },
+    "geriatrie": {
+        "icon": "fa-user-clock",
+        "color": "#5bb88f",
+        "slug": "geriatrie",
+        "title": {"fr": "Gériatrie", "ar": "طب الشيخوخة", "en": "Geriatrics"},
+        "desc": {"fr": "Médecine des personnes âgées", "ar": "طب كبار السن", "en": "Elderly medicine"}
+    },
+    "greffes-capillaires-visage": {
+        "icon": "fa-cut",
+        "color": "#5bb88f",
+        "slug": "greffes-capillaires-visage",
+        "title": {"fr": "Greffes Capillaires et du Visage", "ar": "زراعة الشعر والوجه", "en": "Hair & Facial Transplants"},
+        "desc": {"fr": "FUE, DHI, greffe de barbe", "ar": "FUE، DHI، زراعة اللحية", "en": "FUE, DHI, beard transplant"}
+    },
+    "gynecologie-obstetrique": {
+        "icon": "fa-female",
+        "color": "#5bb88f",
+        "slug": "gynecologie-obstetrique",
+        "title": {"fr": "Gynécologie obstétrique", "ar": "أمراض النساء والتوليد", "en": "Gynecology & Obstetrics"},
+        "desc": {"fr": "Santé féminine et maternité", "ar": "صحة المرأة والأمومة", "en": "Women's health and maternity"}
+    },
+    "hematologie": {
+        "icon": "fa-tint",
+        "color": "#5bb88f",
+        "slug": "hematologie",
+        "title": {"fr": "Hématologie", "ar": "أمراض الدم", "en": "Hematology"},
+        "desc": {"fr": "Maladies du sang", "ar": "أمراض الدم", "en": "Blood diseases"}
+    },
+    "immunologie": {
+        "icon": "fa-shield-virus",
+        "color": "#5bb88f",
+        "slug": "immunologie",
+        "title": {"fr": "Immunologie", "ar": "علم المناعة", "en": "Immunology"},
+        "desc": {"fr": "Système immunitaire", "ar": "الجهاز المناعي", "en": "Immune system"}
+    },
+    "maladies-infectieuses": {
+        "icon": "fa-virus",
+        "color": "#5bb88f",
+        "slug": "maladies-infectieuses",
+        "title": {"fr": "Maladies infectieuses", "ar": "الأمراض المعدية", "en": "Infectious Diseases"},
+        "desc": {"fr": "Infections et maladies transmissibles", "ar": "العدوى والأمراض المعدية", "en": "Infections and communicable diseases"}
+    },
+    "medecine-generale": {
+        "icon": "fa-user-md",
+        "color": "#5bb88f",
+        "slug": "medecine-generale",
+        "title": {"fr": "Médecine générale", "ar": "الطب العام", "en": "General Medicine"},
+        "desc": {"fr": "Soins de santé primaires", "ar": "الرعاية الصحية الأولية", "en": "Primary healthcare"}
+    },
+    "medecine-interne": {
+        "icon": "fa-clinic-medical",
+        "color": "#5bb88f",
+        "slug": "medecine-interne",
+        "title": {"fr": "Médecine interne", "ar": "الطب الباطني", "en": "Internal Medicine"},
+        "desc": {"fr": "Diagnostic et traitement des maladies internes", "ar": "تشخيص وعلاج الأمراض الباطنية", "en": "Diagnosis and treatment of internal diseases"}
+    },
+    "medecine-physique-readaptation": {
+        "icon": "fa-walking",
+        "color": "#5bb88f",
+        "slug": "medecine-physique-readaptation",
+        "title": {"fr": "Médecine physique et réadaptation", "ar": "الطب الفيزيائي وإعادة التأهيل", "en": "Physical Medicine & Rehabilitation"},
+        "desc": {"fr": "Rééducation et réadaptation", "ar": "إعادة التأهيل", "en": "Rehabilitation"}
+    },
+    "medecine-reproduction": {
+        "icon": "fa-baby-carriage",
+        "color": "#5bb88f",
+        "slug": "medecine-reproduction",
+        "title": {"fr": "Médecine de la reproduction", "ar": "طب الإنجاب", "en": "Reproductive Medicine"},
+        "desc": {"fr": "FIV, fertilité, PMA", "ar": "أطفال الأنابيب، الخصوبة", "en": "IVF, fertility, ART"}
+    },
+    "medecine-urgence": {
+        "icon": "fa-ambulance",
+        "color": "#5bb88f",
+        "slug": "medecine-urgence",
+        "title": {"fr": "Médecine d'urgence", "ar": "طب الطوارئ", "en": "Emergency Medicine"},
+        "desc": {"fr": "Soins d'urgence", "ar": "رعاية الطوارئ", "en": "Emergency care"}
+    },
+    "neonatalogie": {
+        "icon": "fa-baby",
+        "color": "#5bb88f",
+        "slug": "neonatalogie",
+        "title": {"fr": "Néonatalogie", "ar": "طب حديثي الولادة", "en": "Neonatology"},
+        "desc": {"fr": "Soins aux nouveau-nés", "ar": "رعاية حديثي الولادة", "en": "Newborn care"}
+    },
+    "nephrologie": {
+        "icon": "fa-kidneys",
+        "color": "#5bb88f",
+        "slug": "nephrologie",
+        "title": {"fr": "Néphrologie", "ar": "أمراض الكلى", "en": "Nephrology"},
+        "desc": {"fr": "Maladies des reins", "ar": "أمراض الكلى", "en": "Kidney diseases"}
+    },
+    "neurochirurgie": {
+        "icon": "fa-brain",
+        "color": "#5bb88f",
+        "slug": "neurochirurgie",
+        "title": {"fr": "Neurochirurgie", "ar": "جراحة الأعصاب", "en": "Neurosurgery"},
+        "desc": {"fr": "Chirurgie du cerveau et de la moelle", "ar": "جراحة الدماغ والنخاع", "en": "Brain and spinal cord surgery"}
+    },
+    "neurologie": {
+        "icon": "fa-brain",
+        "color": "#5bb88f",
+        "slug": "neurologie",
+        "title": {"fr": "Neurologie", "ar": "طب الأعصاب", "en": "Neurology"},
+        "desc": {"fr": "Maladies du système nerveux", "ar": "أمراض الجهاز العصبي", "en": "Nervous system diseases"}
+    },
+    "oncologie-cancerologie": {
+        "icon": "fa-ribbon",
+        "color": "#5bb88f",
+        "slug": "oncologie-cancerologie",
+        "title": {"fr": "Oncologie – Cancérologie", "ar": "علاج الأورام", "en": "Oncology – Cancer Treatment"},
+        "desc": {"fr": "Traitement du cancer", "ar": "علاج السرطان", "en": "Cancer treatment"}
+    },
+    "ophtalmologie": {
+        "icon": "fa-eye",
+        "color": "#5bb88f",
+        "slug": "ophtalmologie",
+        "title": {"fr": "Ophtalmologie", "ar": "طب العيون", "en": "Ophthalmology"},
+        "desc": {"fr": "Maladies des yeux, chirurgie laser", "ar": "أمراض العيون، جراحة الليزر", "en": "Eye diseases, laser surgery"}
+    },
+    "orl": {
+        "icon": "fa-ear-listen",
+        "color": "#5bb88f",
+        "slug": "orl",
+        "title": {"fr": "ORL (Oto-Rhino-Laryngologie)", "ar": "أنف وأذن وحنجرة", "en": "ENT (Otorhinolaryngology)"},
+        "desc": {"fr": "Oreilles, nez, gorge", "ar": "الأذن والأنف والحنجرة", "en": "Ears, nose, throat"}
+    },
+    "orthopedie": {
+        "icon": "fa-bone",
+        "color": "#5bb88f",
+        "slug": "orthopedie",
+        "title": {"fr": "Orthopédie", "ar": "جراحة العظام", "en": "Orthopedics"},
+        "desc": {"fr": "Os, articulations, prothèses", "ar": "العظام، المفاصل، الأطراف الصناعية", "en": "Bones, joints, prosthetics"}
+    },
+    "pediatrie": {
+        "icon": "fa-child",
+        "color": "#5bb88f",
+        "slug": "pediatrie",
+        "title": {"fr": "Pédiatrie", "ar": "طب الأطفال", "en": "Pediatrics"},
+        "desc": {"fr": "Médecine des enfants", "ar": "طب الأطفال", "en": "Children's medicine"}
+    },
+    "pneumologie": {
+        "icon": "fa-lungs",
+        "color": "#5bb88f",
+        "slug": "pneumologie",
+        "title": {"fr": "Médecine respiratoire & Pneumologie", "ar": "طب الجهاز التنفسي", "en": "Respiratory Medicine & Pulmonology"},
+        "desc": {"fr": "Maladies pulmonaires", "ar": "أمراض الرئة", "en": "Lung diseases"}
+    },
+    "protheses-ortheses": {
+        "icon": "fa-wheelchair",
+        "color": "#5bb88f",
+        "slug": "protheses-ortheses",
+        "title": {"fr": "Prothèses et orthèses", "ar": "الأطراف الصناعية والأجهزة التقويمية", "en": "Prosthetics & Orthotics"},
+        "desc": {"fr": "Appareillage et prothèses", "ar": "الأجهزة والأطراف الصناعية", "en": "Devices and prosthetics"}
+    },
+    "psycho-psychiatrie": {
+        "icon": "fa-comments",
+        "color": "#5bb88f",
+        "slug": "psycho-psychiatrie",
+        "title": {"fr": "Psychologie et Psychiatrie", "ar": "علم النفس والطب النفسي", "en": "Psychology & Psychiatry"},
+        "desc": {"fr": "Santé mentale", "ar": "الصحة النفسية", "en": "Mental health"}
+    },
+    "radiologie-imagerie": {
+        "icon": "fa-x-ray",
+        "color": "#5bb88f",
+        "slug": "radiologie-imagerie",
+        "title": {"fr": "Radiologie et imagerie médicale", "ar": "الأشعة والتصوير الطبي", "en": "Radiology & Medical Imaging"},
+        "desc": {"fr": "Diagnostic par imagerie", "ar": "التشخيص بالتصوير", "en": "Imaging diagnosis"}
+    },
+    "rhumatologie": {
+        "icon": "fa-hand-paper",
+        "color": "#5bb88f",
+        "slug": "rhumatologie",
+        "title": {"fr": "Rhumatologie", "ar": "أمراض الروماتيزم", "en": "Rheumatology"},
+        "desc": {"fr": "Maladies articulaires et rhumatismales", "ar": "أمراض المفاصل والروماتيزم", "en": "Joint and rheumatic diseases"}
+    },
+    "toxicomanie-dependance": {
+        "icon": "fa-pills",
+        "color": "#5bb88f",
+        "slug": "toxicomanie-dependance",
+        "title": {"fr": "Toxicomanie et Dépendance", "ar": "الإدمان والتعافي", "en": "Addiction & Dependency"},
+        "desc": {"fr": "Traitement des addictions", "ar": "علاج الإدمان", "en": "Addiction treatment"}
+    },
+    "transplantologie": {
+        "icon": "fa-hand-holding-heart",
+        "color": "#5bb88f",
+        "slug": "transplantologie",
+        "title": {"fr": "Transplantologie", "ar": "زراعة الأعضاء", "en": "Transplantology"},
+        "desc": {"fr": "Greffes d'organes", "ar": "زراعة الأعضاء", "en": "Organ transplants"}
+    },
+    "urologie": {
+        "icon": "fa-male",
+        "color": "#5bb88f",
+        "slug": "urologie",
+        "title": {"fr": "Urologie", "ar": "المسالك البولية", "en": "Urology"},
+        "desc": {"fr": "Système urinaire et reproducteur masculin", "ar": "الجهاز البولي والتناسلي الذكري", "en": "Urinary and male reproductive system"}
+    }
+}

@@ -83,8 +83,7 @@ const [tempAgentRequest, setTempAgentRequest] = useState<Request | null>(null);
 
 const [showAddModal, setShowAddModal] = useState(false);
 const [procedures, setProcedures] = useState<any[]>([]);
-
-
+const [patientMediaFiles, setPatientMediaFiles] = useState<File[]>([]);
 
 // Hospitals assigned by request ID
 const [hospitalsByRequest, setHospitalsByRequest] = useState<Record<number, any[]>>({});
@@ -256,7 +255,7 @@ const loadAssignedHospitals = async (requestsList: Request[]) => {
 
 // Fetch des procédures au chargement
 useEffect(() => {
-  fetch("https://pro.medotra.com/api/get_procedures.php")
+  fetch("https://pro.medotra.com/app/http/api/get_procedures.php")
     .then(res => res.json())
     .then(data => { if (data.success) setProcedures(data.data); });
 }, []);
@@ -315,7 +314,7 @@ useEffect(() => {
       <h1 className="text-3xl font-bold mb-6">Requests</h1>
       <div className="flex justify-between items-center mb-6">
   <h1 className="text-3xl font-bold"></h1>
-  <button 
+  <button
     onClick={() => {
       setShowAddModal(true);
       // Réinitialiser l'onglet à 'general' à l'ouverture
@@ -323,7 +322,14 @@ useEffect(() => {
     }}
     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm"
   >
-    <span className="text-lg font-bold">+</span> Add Request
+    <span className="text-lg font-bold">+</span> Add Request (Popup)
+  </button>
+  
+  <button
+    onClick={() => window.location.href = '/dashboard1/requests/new'}
+    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-2 shadow-lg transition-all"
+  >
+    <span className="text-lg font-bold">+</span> New Request Page
   </button>
 </div>
 
@@ -482,7 +488,7 @@ useEffect(() => {
         className="absolute top-4 right-4 cursor-pointer"
         onClick={() => {
           setShowAddModal(false);
-          // Réinitialiser l'onglet à 'general' pour la prochaine ouverture
+          setPatientMediaFiles([]);
           setActiveTabAdd('general');
         }}
       />
@@ -490,7 +496,7 @@ useEffect(() => {
 
       {/* TABS */}
       <div className="flex gap-2 mb-4">
-        {['general', 'patient', 'medical'].map((tab) => (
+        {['general', 'patient', 'medical', 'media'].map((tab) => (
           <button
             key={tab}
             className={`px-3 py-1 rounded capitalize ${activeTabAdd === tab ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
@@ -552,12 +558,27 @@ useEffect(() => {
             onChange={(e) => setNewRequest({ ...newRequest, source: e.target.value })}
           />
 
-          <label className="block text-sm font-semibold mb-1">Langue</label>
-          <input
+          <label className="block text-sm font-semibold mb-1">Langue préférée</label>
+          <select
             className="w-full border p-2 mb-2"
             value={newRequest.langue || ''}
             onChange={(e) => setNewRequest({ ...newRequest, langue: e.target.value })}
-          />
+          >
+            <option value="">-- Sélectionner une langue --</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="ar">العربية</option>
+            <option value="tr">Türkçe</option>
+            <option value="de">Deutsch</option>
+            <option value="it">Italiano</option>
+            <option value="pt">Português</option>
+            <option value="nl">Nederlands</option>
+            <option value="ru">Русский</option>
+            <option value="zh">中文</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+          </select>
         </>
       )}
 
@@ -652,13 +673,58 @@ useEffect(() => {
         </div>
       )}
 
+      {/* CONTENU - ONGLET MEDIA */}
+      {activeTabAdd === 'media' && (
+        <div className="max-h-[400px] overflow-y-auto pr-2">
+          <label className="block text-sm font-semibold mb-2">Photos du patient</label>
+          <p className="text-sm text-gray-600 mb-3">
+            Sélectionnez une ou plusieurs photos à uploader (documents médicaux, radios, etc.)
+          </p>
+          
+          <input
+            type="file"
+            multiple
+            accept="image/*,.pdf"
+            onChange={(e) => {
+              if (e.target.files) {
+                setPatientMediaFiles(Array.from(e.target.files));
+              }
+            }}
+            className="w-full border p-2 mb-3"
+          />
+
+          {patientMediaFiles.length > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-semibold mb-2">
+                {patientMediaFiles.length} fichier(s) sélectionné(s) :
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-700">
+                {patientMediaFiles.map((file, index) => (
+                  <li key={index}>{file.name}</li>
+                ))}
+              </ul>
+              <button
+                onClick={() => setPatientMediaFiles([])}
+                className="mt-2 text-sm text-red-600 hover:text-red-800"
+              >
+                Effacer la sélection
+              </button>
+            </div>
+          )}
+
+          {patientMediaFiles.length === 0 && (
+            <p className="text-sm text-gray-500 italic">Aucun fichier sélectionné</p>
+          )}
+        </div>
+      )}
+
       {/* FOOTER ACTIONS */}
       <div className="flex justify-end gap-3 mt-4 border-t pt-4">
         <button
           className="px-4 py-2 border rounded hover:bg-gray-50 transition-colors"
           onClick={() => {
             setShowAddModal(false);
-            // Réinitialiser l'onglet à 'general' pour la prochaine ouverture
+            setPatientMediaFiles([]);
             setActiveTabAdd('general');
           }}
         >
@@ -667,8 +733,8 @@ useEffect(() => {
         <button
   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors shadow-md"
   onClick={async () => {
-    if (!newRequest.patient_nom || !newRequest.id_procedure) {
-      alert("Le nom du patient et la procédure sont obligatoires.");
+    if (!newRequest.patient_email || !newRequest.id_procedure) {
+      alert("L'email du patient et la procédure sont obligatoires.");
       return;
     }
     try {
@@ -683,8 +749,68 @@ useEffect(() => {
       });
       
       const result = await res.json();
-      if (result.success) {
-        alert("Requête créée avec succès !");
+      console.log('📋 Résultat création request:', result);
+      console.log('📋 result.data:', result.data);
+      console.log('📋 result.data.success:', result.data?.success);
+      
+      // AFFICHER LE JSON COMPLET DANS UNE ALERTE
+      alert('🔍 JSON RETOURNÉ PAR LE PHP:\n\n' + JSON.stringify(result, null, 2));
+      
+      // Vérifier si le PHP a vraiment réussi
+      if (result.success && result.data?.success) {
+        const idRequest = result.data?.id_request || result.data?.id;
+        const idPatient = result.data?.id_patient;
+        
+        console.log('🆔 IDs récupérés:', { idRequest, idPatient, filesCount: patientMediaFiles.length });
+
+        // Upload photos patient si des fichiers ont été sélectionnés
+        if (patientMediaFiles.length > 0 && idRequest && idPatient) {
+          console.log('📤 Début upload de', patientMediaFiles.length, 'fichier(s)...');
+          const uploadPromises = patientMediaFiles.map(async (file) => {
+            const formData = new FormData();
+            formData.append('type', 'patient_media');
+            formData.append('entity_id', String(idPatient));
+            formData.append('request_id', String(idRequest));
+            formData.append('file', file);
+
+            const uploadRes = await fetch('/api/upload', {
+              method: 'POST',
+              body: formData,
+            });
+
+            return await uploadRes.json();
+          });
+
+          const uploadResults = await Promise.all(uploadPromises);
+          console.log('📊 Résultats uploads:', uploadResults);
+          
+          const failedUploads = uploadResults.filter(r => !r.success);
+          
+          if (failedUploads.length > 0) {
+            console.warn('❌ Certaines photos n\'ont pas pu être uploadées:', failedUploads);
+            alert(`⚠️ Requête créée avec succès !\n\n` +
+                  `ID Patient: ${idPatient}\n` +
+                  `ID Request: ${idRequest}\n\n` +
+                  `⚠️ ${failedUploads.length} fichier(s) non uploadé(s).\n` +
+                  `Voir console pour détails.`);
+          } else if (uploadResults.length > 0) {
+            console.log('✅ Tous les fichiers ont été uploadés avec succès!');
+            alert(`✅ Requête créée avec succès !\n\n` +
+                  `ID Patient: ${idPatient}\n` +
+                  `ID Request: ${idRequest}\n\n` +
+                  `📤 ${uploadResults.length} fichier(s) uploadé(s) avec succès!`);
+          }
+        } else {
+          console.log('⚠️ Upload ignoré:', { 
+            hasFiles: patientMediaFiles.length > 0,
+            idRequest, 
+            idPatient 
+          });
+          alert(`✅ Requête créée avec succès !\n\n` +
+                `ID Patient: ${idPatient || 'N/A'}\n` +
+                `ID Request: ${idRequest || 'N/A'}\n\n` +
+                `Aucun fichier à uploader.`);
+        }
         // Réinitialiser le formulaire après succès
         setNewRequest({
           status: 'New',
@@ -702,11 +828,15 @@ useEffect(() => {
           text_chirurgies: '',
           text_medicaments: ''
         });
+        setPatientMediaFiles([]);
         setActiveTabAdd('general');
         setShowAddModal(false);
         window.location.reload();
       } else {
-        alert("Erreur: " + result.error);
+        // Afficher l'erreur détaillée
+        const errorMsg = result.data?.message || result.error || 'Erreur inconnue';
+        alert(`❌ Erreur lors de la création:\n\n${errorMsg}\n\nVoir console pour détails.`);
+        console.error('📋 Réponse complète:', result);
       }
     } catch (err) {
       alert("Erreur de connexion à l'API interne");

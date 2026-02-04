@@ -261,16 +261,21 @@ const [doctorCategories, setDoctorCategories] = useState<string[]>([]);
     }
   };
 
-// Helper pour construire l'URL correcte des photos/CV des docteurs
+// Helper pour construire l'URL correcte des photos/CV des docteurs et case managers
+// Gère les chemins de functions.php: uploads/casemanagers/casemanager_3/xxx.png
 const getDoctorMediaUrl = (path: string | null) => {
   if (!path) return null;
 
-  // 1. Nettoyer le chemin : supprimer les "../" si PHP les a enregistrés en BDD
-  // On transforme "../../../uploads/..." en "uploads/..."
+  // Si c'est déjà une URL complète, retourner tel quel
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  // Nettoyer le chemin : supprimer les "../" si présents
   const cleanPath = path.replace(/\.\.\//g, '');
 
-  // 2. Construire l'URL propre
-  // Comme le dossier 'uploads' est à la racine, on tape directement dessus
+  // Construire l'URL complète
+  // Le chemin stocké en BDD est : uploads/casemanagers/casemanager_3/xxx.png
   return `https://pro.medotra.com/${cleanPath}`;
 };
 
@@ -321,73 +326,38 @@ const getDoctorMediaUrl = (path: string | null) => {
   
     setMediaLoading(true);
   
-    // --- FONCTION INTERNE POUR CONVERTIR EN BASE64 ---
-    const fileToBase64 = (file: File): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
-      });
-    };
-  
     try {
-      // 1. On convertit tous les fichiers en Base64 (Tableau de strings)
-      // C'est cette étape qui permet de ne plus utiliser FormData
-      const base64Images = await Promise.all(selectedFiles.map(file => fileToBase64(file)));
+      // Upload chaque fichier individuellement via /api/upload
+      const uploadPromises = selectedFiles.map(async (file) => {
+        const formData = new FormData();
+        formData.append('type', 'hospital_media');
+        formData.append('entity_id', String(hospitalId));
+        formData.append('file', file);
   
-      // 2. On prépare l'objet JSON comme le PHP l'attend maintenant
-      const payload = {
-        id_hospital: hospitalId,
-        langue: mediaLangue,
-        images: base64Images // C'est ici que passent tes images
-      };
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
   
-      console.log("Envoi du payload JSON (Base64)...");
-  
-      const response = await fetch('/api/poto', { // Assure-toi que c'est bien /api/media
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        return await response.json();
       });
   
-      const text = await response.text();
+      const results = await Promise.all(uploadPromises);
       
-      console.log("--- DEBUG RETOUR SERVEUR ---");
-      console.log("Status:", response.status);
-      console.log("Text:", text);
-      console.log("----------------------------");
-  
-      let result = {};
-      if (text && text.trim().length > 0) {
-        try {
-          result = JSON.parse(text);
-        } catch (parseError) {
-          throw new Error(`Erreur parsing JSON. Status: ${response.status}`);
-        }
-      }
-  
-      if (!response.ok) {
-        throw new Error(result.error || `Erreur HTTP ${response.status}`);
-      }
-  
-      if (result.success) {
-        // Si le PHP renvoie les nouveaux fichiers, on met à jour l'état
-        if (result.data) {
-          setMedia(prev => [...prev, ...result.data]);
-        } else {
-          // Sinon on recharge tout proprement
-          loadMedia();
-        }
-  
-        setSelectedFiles([]);
-        alert('Photos ajoutées avec succès (via Base64) !');
+      // Vérifier si tous les uploads ont réussi
+      const failedUploads = results.filter(r => !r.success);
+      
+      if (failedUploads.length > 0) {
+        console.error('Échecs d\'upload:', failedUploads);
+        alert(`${failedUploads.length} fichier(s) n'ont pas pu être uploadés`);
       } else {
-        throw new Error(result.error || 'Erreur inconnue');
+        alert('✅ Toutes les photos ont été ajoutées avec succès !');
       }
   
+      // Recharger les médias et vider la sélection
+      setSelectedFiles([]);
+      loadMedia();
+      
     } catch (err) {
       console.error('Erreur upload:', err);
       alert(`Erreur: ${err instanceof Error ? err.message : 'Inconnue'}`);
@@ -721,20 +691,22 @@ const getDoctorMediaUrl = (path: string | null) => {
       if (result.success) {
         const newId = result.id;
         
-        // Upload photo si sélectionnée
+        // Upload photo si sélectionnée via /api/upload
         if (caseManagerPhoto && newId) {
           const formData = new FormData();
-          formData.append('id_case_manager', String(newId));
-          formData.append('id_hospital', String(id));
-          formData.append('profile_photo', caseManagerPhoto);
+          formData.append('type', 'casemanager_photo');
+          formData.append('entity_id', String(newId));
+          formData.append('file', caseManagerPhoto);
 
-          const photoResponse = await fetch('/api/case-managers', {
+          const photoResponse = await fetch('/api/upload', {
             method: 'POST',
             body: formData,
           });
 
-          if (!photoResponse.ok) {
-            console.warn('Photo upload failed, but case manager was created');
+          const uploadResult = await photoResponse.json();
+          if (!uploadResult.success) {
+            console.warn('Photo upload failed:', uploadResult);
+            alert(`⚠️ Case manager créé mais erreur lors de l'upload de la photo: ${uploadResult.message || 'Erreur inconnue'}`);
           }
         }
 
@@ -785,20 +757,22 @@ const getDoctorMediaUrl = (path: string | null) => {
 
       const result = await response.json();
       if (result.success) {
-        // Upload photo si sélectionnée
+        // Upload photo si sélectionnée via /api/upload
         if (caseManagerPhoto && editingCaseManagerId) {
           const formData = new FormData();
-          formData.append('id_case_manager', String(editingCaseManagerId));
-          formData.append('id_hospital', String(id));
-          formData.append('profile_photo', caseManagerPhoto);
+          formData.append('type', 'casemanager_photo');
+          formData.append('entity_id', String(editingCaseManagerId));
+          formData.append('file', caseManagerPhoto);
 
-          const photoResponse = await fetch('/api/case-managers', {
+          const photoResponse = await fetch('/api/upload', {
             method: 'POST',
             body: formData,
           });
 
-          if (!photoResponse.ok) {
-            console.warn('Photo upload failed');
+          const uploadResult = await photoResponse.json();
+          if (!uploadResult.success) {
+            console.warn('Photo upload failed:', uploadResult);
+            alert(`⚠️ Case manager mis à jour mais erreur lors de l'upload de la photo: ${uploadResult.message || 'Erreur inconnue'}`);
           }
         }
 
@@ -958,20 +932,39 @@ const createDoctor = async () => {
     if (result.success) {
       const newId = result.id || result.id_medecin;
       
-      // Upload photo et CV
-      if (doctorPhoto || doctorCV) {
-        const formData = new FormData();
-        formData.append('id_medecin', String(newId));
-        formData.append('id_hospital', String(id));
-        if (doctorPhoto) formData.append('photo', doctorPhoto);
-        if (doctorCV) formData.append('cv', doctorCV);
+      // Upload photo et CV via /api/upload
+      if (doctorPhoto) {
+        const photoFormData = new FormData();
+        photoFormData.append('type', 'doctor_photo');
+        photoFormData.append('entity_id', String(newId));
+        photoFormData.append('file', doctorPhoto);
 
-        const uploadResponse = await fetch('/api/doctors', {
+        const photoResponse = await fetch('/api/upload', {
           method: 'POST',
-          body: formData,
+          body: photoFormData,
         });
 
-        if (!uploadResponse.ok) console.error("Fichiers non uploadés");
+        const photoResult = await photoResponse.json();
+        if (!photoResult.success) {
+          console.warn('Photo upload failed:', photoResult);
+        }
+      }
+
+      if (doctorCV) {
+        const cvFormData = new FormData();
+        cvFormData.append('type', 'doctor_cv');
+        cvFormData.append('entity_id', String(newId));
+        cvFormData.append('file', doctorCV);
+
+        const cvResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: cvFormData,
+        });
+
+        const cvResult = await cvResponse.json();
+        if (!cvResult.success) {
+          console.warn('CV upload failed:', cvResult);
+        }
       }
 
       alert('✅ Docteur créé avec succès');
@@ -1019,14 +1012,39 @@ const updateDoctor = async () => {
 
     const result = await response.json();
     if (result.success) {
-      if (doctorPhoto || doctorCV) {
-        const formData = new FormData();
-        formData.append('id_medecin', String(editingDoctorId));
-        formData.append('id_hospital', String(id));
-        if (doctorPhoto) formData.append('photo', doctorPhoto);
-        if (doctorCV) formData.append('cv', doctorCV);
+      // Upload photo et CV via /api/upload
+      if (doctorPhoto) {
+        const photoFormData = new FormData();
+        photoFormData.append('type', 'doctor_photo');
+        photoFormData.append('entity_id', String(editingDoctorId));
+        photoFormData.append('file', doctorPhoto);
 
-        await fetch('/api/doctors', { method: 'POST', body: formData });
+        const photoResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: photoFormData,
+        });
+
+        const photoResult = await photoResponse.json();
+        if (!photoResult.success) {
+          console.warn('Photo upload failed:', photoResult);
+        }
+      }
+
+      if (doctorCV) {
+        const cvFormData = new FormData();
+        cvFormData.append('type', 'doctor_cv');
+        cvFormData.append('entity_id', String(editingDoctorId));
+        cvFormData.append('file', doctorCV);
+
+        const cvResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: cvFormData,
+        });
+
+        const cvResult = await cvResponse.json();
+        if (!cvResult.success) {
+          console.warn('CV upload failed:', cvResult);
+        }
       }
 
       alert('✅ Docteur mis à jour avec succès');
@@ -1080,21 +1098,38 @@ const deleteDoctor = async (idDoctor: number) => {
     setError(null);
 
     try {
-      // Si des fichiers sont sélectionnés, uploader d'abord les fichiers
-      if (logoFile || certificateFile) {
-        const formData = new FormData();
-        formData.append('id_hospital', String(id));
-        if (logoFile) formData.append('logo', logoFile);
-        if (certificateFile) formData.append('certifications', certificateFile);
+      // Upload logo via /api/upload
+      if (logoFile) {
+        const logoFormData = new FormData();
+        logoFormData.append('type', 'hospital_logo');
+        logoFormData.append('entity_id', String(id));
+        logoFormData.append('file', logoFile);
 
-        const uploadResponse = await fetch('/api/hospitals', {
+        const logoResponse = await fetch('/api/upload', {
           method: 'POST',
-          body: formData,
+          body: logoFormData,
         });
 
-        if (!uploadResponse.ok) {
-          const uploadError = await uploadResponse.json().catch(() => ({ error: 'Erreur upload' }));
-          throw new Error(uploadError.error || "Erreur lors de l'upload des fichiers");
+        const logoResult = await logoResponse.json();
+        if (!logoResult.success) {
+          throw new Error(logoResult.message || "Erreur lors de l'upload du logo");
+        }
+      }
+
+      // Upload certifications (ancien système pour l'instant)
+      if (certificateFile) {
+        const certFormData = new FormData();
+        certFormData.append('id_hospital', String(id));
+        certFormData.append('certifications', certificateFile);
+
+        const certResponse = await fetch('/api/hospitals', {
+          method: 'POST',
+          body: certFormData,
+        });
+
+        if (!certResponse.ok) {
+          const certError = await certResponse.json().catch(() => ({ error: 'Erreur upload' }));
+          throw new Error(certError.error || "Erreur lors de l'upload des certifications");
         }
       }
 
