@@ -395,7 +395,7 @@ useEffect(() => {
       {/* Drapeau : On essaie de mapper le pays au code ISO */}
       <div className="w-5 shadow-sm border border-gray-100 flex items-center">
         <Flag 
-          code={r.patient_pays === 'France' ? 'FR' : r.patient_pays === 'Algerie' ? 'DZ' : r.patient_pays} 
+          code={r.patient_pays === 'France' ? 'FR' : r.patient_pays === 'Algerie' ? 'DZ' : r.patient_pays || undefined} 
           fallback={<span className="text-[10px]">🏳️</span>}
         />
       </div>
