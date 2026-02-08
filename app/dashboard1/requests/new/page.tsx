@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, User, Stethoscope, Image as ImageIcon, Settings2, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import languagesData from '@/app/json/languages.json';
+import countriesData from '@/app/json/countries.json';
 
 interface Request {
   status: string;
@@ -14,6 +16,10 @@ interface Request {
   patient_age: number;
   patient_sexe: string;
   patient_pays: string;
+  patient_poids: string;
+  patient_taille: string;
+  patient_smoker: string;
+  patient_imc: string;
   source: string;
   text_maladies: string;
   text_allergies: string;
@@ -52,7 +58,11 @@ export default function NewRequestPage() {
     text_maladies: '',
     text_allergies: '',
     text_chirurgies: '',
-    text_medicaments: ''
+    text_medicaments: '',
+    patient_poids: '',
+    patient_taille: '',
+    patient_smoker: '',
+    patient_imc: '',
   });
 
   useEffect(() => {
@@ -219,9 +229,11 @@ export default function NewRequestPage() {
                       value={newRequest.langue || 'fr'}
                       onChange={(e) => setNewRequest({ ...newRequest, langue: e.target.value })}
                     >
-                      <option value="fr">Français</option>
-                      <option value="en">English</option>
-                      <option value="ar">Arabic</option>
+                      {languagesData.languages.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.native_name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -258,6 +270,72 @@ export default function NewRequestPage() {
                       <option value="M">Masculin</option>
                       <option value="F">Féminin</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Poids (kg)</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-blue-500/20 transition-all" 
+                      value={newRequest.patient_poids} 
+                      onChange={(e) => setNewRequest({...newRequest, patient_poids: e.target.value})} 
+                      placeholder="Ex: 75" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Taille (cm)</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-blue-500/20 transition-all" 
+                      value={newRequest.patient_taille} 
+                      onChange={(e) => setNewRequest({...newRequest, patient_taille: e.target.value})} 
+                      placeholder="Ex: 175" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Fumeur</label>
+                    <select 
+                      className="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-blue-500/20 transition-all" 
+                      value={newRequest.patient_smoker} 
+                      onChange={(e) => setNewRequest({...newRequest, patient_smoker: e.target.value})}
+                    >
+                      <option value="">--</option>
+                      <option value="oui">Oui</option>
+                      <option value="non">Non</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">IMC</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-blue-500/20 transition-all" 
+                      value={newRequest.patient_imc} 
+                      onChange={(e) => setNewRequest({...newRequest, patient_imc: e.target.value})} 
+                      placeholder="Ex: 24.5" 
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Pays</label>
+                    <select
+                      className="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-blue-500/20 transition-all" 
+                      value={newRequest.patient_pays} 
+                      onChange={(e) => setNewRequest({...newRequest, patient_pays: e.target.value})}
+                    >
+                      <option value="">-- Sélectionner un pays --</option>
+                      {countriesData.countries.map((country) => (
+                        <option key={country.code} value={country.name}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Téléphone</label>
+                    <input 
+                      className="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-blue-500/20 transition-all" 
+                      value={newRequest.patient_tel} 
+                      onChange={(e) => setNewRequest({...newRequest, patient_tel: e.target.value})} 
+                      placeholder="+33 6 12 34 56 78" 
+                    />
                   </div>
                 </div>
               </div>

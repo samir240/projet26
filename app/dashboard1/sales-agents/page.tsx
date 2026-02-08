@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Eye, Pencil, Trash2, X, User, Upload } from 'lucide-react';
+import languagesData from '@/app/json/languages.json';
 
 interface SalesAgent {
   id_commercial: number;
@@ -387,9 +388,11 @@ export default function SalesAgentsPage() {
                     value={newAgent.langue || 'fr'}
                     onChange={(e) => setNewAgent({ ...newAgent, langue: e.target.value })}
                   >
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
+                    {languagesData.languages.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.native_name} ({lang.name})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -581,9 +584,11 @@ export default function SalesAgentsPage() {
                     value={editAgent.langue || 'fr'}
                     onChange={(e) => setEditAgent({ ...editAgent, langue: e.target.value })}
                   >
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
+                    {languagesData.languages.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.native_name} ({lang.name})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -654,7 +659,6 @@ export default function SalesAgentsPage() {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
                         action: 'update',
-                        id_commercial: editAgent.id_commercial,
                         ...editAgent
                       }),
                     });

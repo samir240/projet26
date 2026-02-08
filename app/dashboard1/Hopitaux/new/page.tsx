@@ -19,7 +19,6 @@ interface HospitalForm {
   certifications: string;
   nom_gerant: string;
   reviews: number;
-  note_google: number;
   is_active: number;
 }
 
@@ -42,7 +41,6 @@ export default function NewHospitalPage() {
     certifications: '',
     nom_gerant: '',
     reviews: 0,
-    note_google: 0,
     is_active: 1
   });
   const [loading, setLoading] = useState(false);
@@ -236,22 +234,7 @@ export default function NewHospitalPage() {
               type="url"
             />
 
-            <Input 
-              label="Note Google" 
-              value={hospital.note_google.toString()}
-              onChange={v => setHospital({ ...hospital, note_google: Number(v) || 0 })} 
-              type="number"
-              step="0.1"
-              min="0"
-              max="5"
-            />
 
-            <Input 
-              label="Nombre de reviews" 
-              value={hospital.reviews.toString()}
-              onChange={v => setHospital({ ...hospital, reviews: Number(v) || 0 })} 
-              type="number"
-            />
 
             <FileInput 
               label="Logo" 

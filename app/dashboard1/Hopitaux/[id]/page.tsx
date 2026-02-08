@@ -1328,12 +1328,6 @@ const deleteDoctor = async (idDoctor: number) => {
               max="5"
             />
 
-            <Input 
-              label="Nombre de reviews" 
-              value={hospital.reviews ? String(hospital.reviews) : ''}
-              onChange={v => setHospital({ ...hospital, reviews: Number(v) || 0 })} 
-              type="number"
-            />
 
             <FileInput 
               label="Logo" 
@@ -2460,23 +2454,25 @@ const deleteDoctor = async (idDoctor: number) => {
                 onChange={(e) => setDoctorForm({ ...doctorForm, experience_years: Number(e.target.value) })}
               />
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Qualifications</label>
-              <input
-                type="text"
-                placeholder="Diplômes, Certificats..."
-                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
-                value={doctorForm.qualifications}
-                onChange={(e) => setDoctorForm({ ...doctorForm, qualifications: e.target.value })}
-              />
-            </div>
+          
           </div>
         </div>
 
         {/* Section 3: Biographie & Réalisations */}
         <div className="space-y-4 pt-2">
           <h3 className="text-sm font-bold text-green-700 uppercase tracking-wider border-b pb-1">Biography & Achievements</h3>
+         
           <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Qualifications</label>
+              <textarea
+              rows={2}
+              className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+                placeholder="Diplômes, Certificats..."
+                 value={doctorForm.qualifications}
+                onChange={(e) => setDoctorForm({ ...doctorForm, qualifications: e.target.value })}
+              />
+            </div>
+         <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Description / Bio</label>
             <textarea
               rows={3}
@@ -2496,6 +2492,7 @@ const deleteDoctor = async (idDoctor: number) => {
               onChange={(e) => setDoctorForm({ ...doctorForm, realisations: e.target.value })}
             />
           </div>
+      
         </div>
 
         {/* Section 4: Médias (Photo & CV) */}

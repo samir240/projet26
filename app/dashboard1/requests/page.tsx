@@ -314,22 +314,13 @@ useEffect(() => {
       <h1 className="text-3xl font-bold mb-6">Requests</h1>
       <div className="flex justify-between items-center mb-6">
   <h1 className="text-3xl font-bold"></h1>
-  <button
-    onClick={() => {
-      setShowAddModal(true);
-      // Réinitialiser l'onglet à 'general' à l'ouverture
-      setActiveTabAdd('general');
-    }}
-    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm"
-  >
-    <span className="text-lg font-bold">+</span> Add Request (Popup)
-  </button>
+
   
   <button
     onClick={() => window.location.href = '/dashboard1/requests/new'}
     className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-2 shadow-lg transition-all"
   >
-    <span className="text-lg font-bold">+</span> New Request Page
+    <span className="text-lg font-bold">+</span> New Request
   </button>
 </div>
 
