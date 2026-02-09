@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import countriesData from '@/app/json/countries.json';
 
 interface HospitalForm {
   nom: string;
@@ -48,7 +49,6 @@ export default function NewHospitalPage() {
   const [activeTab, setActiveTab] = useState<Tab>('Profile');
   const [showOnline, setShowOnline] = useState(true);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [certificateFile, setCertificateFile] = useState<File | null>(null);
 
   const createHospital = async () => {
     if (!hospital.nom || !hospital.ville || !hospital.pays) {
@@ -83,21 +83,21 @@ export default function NewHospitalPage() {
 
       const newHospitalId = createResult.id;
 
-      // Si des fichiers sont sélectionnés, les uploader
-      if (logoFile || certificateFile) {
+      // Upload logo via /api/upload
+      if (logoFile) {
         const formData = new FormData();
-        formData.append('id_hospital', String(newHospitalId));
-        if (logoFile) formData.append('logo', logoFile);
-        if (certificateFile) formData.append('certifications', certificateFile);
+        formData.append('type', 'hospital_logo');
+        formData.append('entity_id', String(newHospitalId));
+        formData.append('file', logoFile);
 
-        const uploadResponse = await fetch('/api/hospitals', {
+        const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
 
-        if (!uploadResponse.ok) {
-          const uploadError = await uploadResponse.json().catch(() => ({ error: 'Erreur upload' }));
-          console.warn('Erreur lors de l\'upload des fichiers:', uploadError);
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResult.success) {
+          console.warn('Erreur lors de l\'upload du logo:', uploadResult);
           // On continue quand même, l'hôpital est créé
         }
       }
@@ -187,12 +187,22 @@ export default function NewHospitalPage() {
               required
             />
 
-            <Input 
-              label="Pays*" 
-              value={hospital.pays}
-              onChange={v => setHospital({ ...hospital, pays: v })} 
-              required
-            />
+            <div>
+              <label className="block text-sm font-semibold mb-1">Pays*</label>
+              <select
+                className="w-full border p-2 rounded"
+                value={hospital.pays}
+                onChange={(e) => setHospital({ ...hospital, pays: e.target.value })}
+                required
+              >
+                <option value="">-- Sélectionner un pays --</option>
+                {countriesData.countries.map((country) => (
+                  <option key={country.code} value={country.name}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <Input 
               label="Latitude" 
@@ -244,13 +254,16 @@ export default function NewHospitalPage() {
               currentFile={logoFile}
             />
 
-            <FileInput 
-              label="Direct Price Warranty certificate" 
-              value={hospital.certifications}
-              onChange={v => setHospital({ ...hospital, certifications: v })}
-              onFileSelect={setCertificateFile}
-              currentFile={certificateFile}
-            />
+            <div>
+              <label className="block text-sm font-semibold mb-1">Certifications</label>
+              <input
+                className="w-full border p-2 rounded"
+                value={hospital.certifications}
+                onChange={(e) => setHospital({ ...hospital, certifications: e.target.value })}
+                placeholder="Ex: ISO9001, ASM14001"
+              />
+              <p className="text-xs text-gray-500 mt-1">Entrez les certifications séparées par des virgules</p>
+            </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
