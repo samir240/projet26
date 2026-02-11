@@ -1315,7 +1315,7 @@ const deleteDoctor = async (idDoctor: number) => {
     setError(null);
 
     try {
-      // Upload logo via /api/upload
+      // Upload logo via /api/upload (met à jour automatiquement la DB)
       if (logoFile) {
         const logoFormData = new FormData();
         logoFormData.append('type', 'hospital_logo');
@@ -1331,11 +1331,11 @@ const deleteDoctor = async (idDoctor: number) => {
         if (!logoResult.success) {
           throw new Error(logoResult.message || "Erreur lors de l'upload du logo");
         }
+        // ✅ L'API PHP met automatiquement à jour le champ 'logo' dans la DB
       }
 
-
-      // Ensuite, mettre à jour les autres données
-      const { id_hospital, ...hospitalData } = hospital;
+      // Mettre à jour les autres données (sauf logo qui est géré par l'upload)
+      const { id_hospital, logo, ...hospitalData } = hospital;
       const response = await fetch('/api/hospitals', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
