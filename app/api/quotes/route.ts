@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // Remplace par l'URL réelle de ton fichier PHP sur le serveur
-const PHP_API_URL = 'https://webemtiyaz.com/api/ia/quotes.php';
+const PHP_API_URL = 'https://pro.medotra.com/app/http/api/quotes.php';
 
 /* ==========================================================
    GET : Récupérer tous les devis ou un devis par ID

@@ -25,6 +25,7 @@ interface Request {
   text_allergies: string;
   text_chirurgies: string;
   text_medicaments: string;
+  message_patient: string;
   id_procedure?: number;
   id_commercial?: number;
 }
@@ -43,6 +44,8 @@ export default function NewRequestPage() {
   const [agents, setAgents] = useState<any[]>([]);
   const [patientMediaFiles, setPatientMediaFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+  const [procedureSearch, setProcedureSearch] = useState('');
+  const [showProcedureDropdown, setShowProcedureDropdown] = useState(false);
 
   const [newRequest, setNewRequest] = useState<Partial<Request>>({
     status: 'New',
@@ -59,6 +62,7 @@ export default function NewRequestPage() {
     text_allergies: '',
     text_chirurgies: '',
     text_medicaments: '',
+    message_patient: '',
     patient_poids: '',
     patient_taille: '',
     patient_smoker: '',
@@ -69,6 +73,33 @@ export default function NewRequestPage() {
     fetch("https://pro.medotra.com/app/http/api/get_procedures.php").then(res => res.json()).then(data => { if (data.success) setProcedures(data.data); });
     fetch("https://pro.medotra.com/app/http/api/get_all_agents.php").then(res => res.json()).then(data => { if (data.success) setAgents(data.data); });
   }, []);
+
+  // Calcul automatique de l'IMC quand poids et taille changent
+  useEffect(() => {
+    const poids = parseFloat(newRequest.patient_poids || '0');
+    const taille = parseFloat(newRequest.patient_taille || '0');
+    
+    if (poids > 0 && taille > 0) {
+      const tailleEnMetres = taille / 100; // Conversion cm -> m
+      const imc = (poids / (tailleEnMetres * tailleEnMetres)).toFixed(2);
+      setNewRequest(prev => ({ ...prev, patient_imc: imc }));
+    }
+  }, [newRequest.patient_poids, newRequest.patient_taille]);
+
+  // Fermer le dropdown des procédures quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.procedure-autocomplete')) {
+        setShowProcedureDropdown(false);
+      }
+    };
+    
+    if (showProcedureDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showProcedureDropdown]);
 
   const nextStep = () => currentStep < STEPS.length - 1 && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 0 && setCurrentStep(currentStep - 1);
@@ -102,38 +133,74 @@ export default function NewRequestPage() {
       alert('📥 RÉPONSE REÇUE:\n\n' + JSON.stringify(result, null, 2));
 
       if (result.success && result.data?.success) {
-        const idRequest = result.data?.id_request;
-        const idPatient = result.data?.id_patient;
+        // Récupération des IDs - Support de différents formats
+        const idRequest = result.data?.id_request || result.data?.id || null;
+        const idPatient = result.data?.id_patient || null;
 
-        console.log('🆔 IDs:', { idRequest, idPatient, filesCount: patientMediaFiles.length });
+        console.log('🆔 IDs récupérés:', { 
+          idRequest, 
+          idPatient, 
+          filesCount: patientMediaFiles.length,
+          rawData: result.data 
+        });
 
-        // Upload photos si présents
-        if (patientMediaFiles.length > 0 && idRequest && idPatient) {
-          const uploadPromises = patientMediaFiles.map(async (file) => {
+        // ALERTE 3 : Vérification des IDs
+        alert(`🆔 IDs RÉCUPÉRÉS:\n\nID Patient: ${idPatient}\nID Request: ${idRequest}\n\nFichiers à uploader: ${patientMediaFiles.length}`);
+
+        // Vérification stricte des IDs
+        if (!idRequest || idRequest === '0' || idRequest === 0) {
+          alert(`❌ ERREUR: ID Request invalide (${idRequest})\n\nLes fichiers ne peuvent pas être uploadés.\n\nVérifiez que le PHP retourne correctement id_request.`);
+        }
+
+        if (!idPatient || idPatient === '0' || idPatient === 0) {
+          alert(`❌ ERREUR: ID Patient invalide (${idPatient})\n\nLes fichiers ne peuvent pas être uploadés.\n\nVérifiez que le PHP retourne correctement id_patient.`);
+        }
+
+        // Upload photos si présents ET IDs valides
+        if (patientMediaFiles.length > 0 && idRequest && idRequest !== '0' && idPatient && idPatient !== '0') {
+          alert(`📤 DÉBUT UPLOAD:\n\n${patientMediaFiles.length} fichier(s)\nPatient ID: ${idPatient}\nRequest ID: ${idRequest}\n\nType: patient_media`);
+          
+          const uploadPromises = patientMediaFiles.map(async (file, index) => {
             const formData = new FormData();
             formData.append('type', 'patient_media');
             formData.append('entity_id', String(idPatient));
             formData.append('request_id', String(idRequest));
             formData.append('file', file);
 
+            console.log(`📤 Upload fichier ${index + 1}/${patientMediaFiles.length}:`, {
+              fileName: file.name,
+              type: 'patient_media',
+              entity_id: idPatient,
+              request_id: idRequest
+            });
+
             const uploadRes = await fetch('/api/upload', {
               method: 'POST',
               body: formData,
             });
 
-            return await uploadRes.json();
+            const uploadResult = await uploadRes.json();
+            console.log(`📥 Résultat upload ${index + 1}:`, uploadResult);
+            
+            return uploadResult;
           });
 
           const uploadResults = await Promise.all(uploadPromises);
+          console.log('📥 Tous les résultats d\'upload:', uploadResults);
+          
           const failedUploads = uploadResults.filter(r => !r.success);
+          const successfulUploads = uploadResults.filter(r => r.success);
 
+          // ALERTE 4 : Résultats d'upload
           if (failedUploads.length > 0) {
-            alert(`⚠️ Requête créée !\n\nID Patient: ${idPatient}\nID Request: ${idRequest}\n\n⚠️ ${failedUploads.length} fichier(s) non uploadé(s).`);
+            alert(`⚠️ UPLOAD TERMINÉ:\n\n✅ ${successfulUploads.length} fichier(s) uploadé(s)\n❌ ${failedUploads.length} échec(s)\n\nID Patient: ${idPatient}\nID Request: ${idRequest}\n\nDétails échecs:\n${failedUploads.map((f, i) => `${i+1}. ${f.message || 'Erreur inconnue'}`).join('\n')}`);
           } else {
-            alert(`✅ Succès !\n\nID Patient: ${idPatient}\nID Request: ${idRequest}\n\n📤 ${uploadResults.length} fichier(s) uploadé(s)!`);
+            alert(`✅ SUCCÈS COMPLET!\n\n📤 ${uploadResults.length} fichier(s) uploadé(s)\n\nID Patient: ${idPatient}\nID Request: ${idRequest}\n\nDossier: uploads/patients/patient_${idPatient}/request_${idRequest}/`);
           }
+        } else if (patientMediaFiles.length > 0) {
+          alert(`⚠️ UPLOAD ANNULÉ:\n\nFichiers présents: ${patientMediaFiles.length}\nMais IDs invalides:\n- ID Patient: ${idPatient}\n- ID Request: ${idRequest}`);
         } else {
-          alert(`✅ Requête créée !\n\nID Patient: ${idPatient}\nID Request: ${idRequest}`);
+          alert(`✅ Requête créée!\n\nID Patient: ${idPatient}\nID Request: ${idRequest}\n\nAucun fichier à uploader.`);
         }
 
         router.push('/dashboard1/requests');
@@ -200,16 +267,44 @@ export default function NewRequestPage() {
             {currentStep === 0 && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="col-span-2">
+                  <div className="col-span-2 relative procedure-autocomplete">
                     <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-1">Procédure souhaitée *</label>
-                    <select
+                    <input
+                      type="text"
                       className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500/20 focus:bg-white p-4 rounded-2xl font-bold text-slate-700 outline-none transition-all"
-                      value={newRequest.id_procedure || ''}
-                      onChange={(e) => setNewRequest({ ...newRequest, id_procedure: Number(e.target.value) })}
-                    >
-                      <option value="">Choisir une option...</option>
-                      {procedures.map((p) => <option key={p.id_procedure} value={p.id_procedure}>{p.nom_procedure}</option>)}
-                    </select>
+                      value={procedureSearch || procedures.find(p => p.id_procedure === newRequest.id_procedure)?.nom_procedure || ''}
+                      onChange={(e) => {
+                        setProcedureSearch(e.target.value);
+                        setShowProcedureDropdown(true);
+                      }}
+                      onFocus={() => setShowProcedureDropdown(true)}
+                      placeholder="Tapez pour rechercher une procédure..."
+                    />
+                    
+                    {showProcedureDropdown && (
+                      <div className="absolute z-50 w-full mt-2 bg-white border-2 border-slate-200 rounded-2xl shadow-2xl max-h-64 overflow-y-auto">
+                        {procedures
+                          .filter(p => p.nom_procedure.toLowerCase().includes(procedureSearch.toLowerCase()))
+                          .map((p) => (
+                            <div
+                              key={p.id_procedure}
+                              className={`p-4 cursor-pointer hover:bg-blue-50 transition-colors ${
+                                newRequest.id_procedure === p.id_procedure ? 'bg-blue-100 font-bold' : ''
+                              }`}
+                              onClick={() => {
+                                setNewRequest({ ...newRequest, id_procedure: p.id_procedure });
+                                setProcedureSearch(p.nom_procedure);
+                                setShowProcedureDropdown(false);
+                              }}
+                            >
+                              {p.nom_procedure}
+                            </div>
+                          ))}
+                        {procedures.filter(p => p.nom_procedure.toLowerCase().includes(procedureSearch.toLowerCase())).length === 0 && (
+                          <div className="p-4 text-center text-slate-400">Aucune procédure trouvée</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-1">Agent Responsable</label>
@@ -304,13 +399,13 @@ export default function NewRequestPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">IMC</label>
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">IMC (Calculé automatiquement)</label>
                     <input 
                       type="text" 
-                      className="w-full bg-slate-50 p-4 rounded-2xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-blue-500/20 transition-all" 
-                      value={newRequest.patient_imc} 
-                      onChange={(e) => setNewRequest({...newRequest, patient_imc: e.target.value})} 
-                      placeholder="Ex: 24.5" 
+                      className="w-full bg-gray-100 p-4 rounded-2xl font-bold outline-none border-2 border-transparent cursor-not-allowed" 
+                      value={newRequest.patient_imc || 'Entrez poids et taille'} 
+                      readOnly
+                      disabled
                     />
                   </div>
                   <div className="col-span-2">
@@ -322,7 +417,7 @@ export default function NewRequestPage() {
                     >
                       <option value="">-- Sélectionner un pays --</option>
                       {countriesData.countries.map((country) => (
-                        <option key={country.code} value={country.name}>
+                        <option key={country.code} value={country.code}>
                           {country.name}
                         </option>
                       ))}
@@ -361,6 +456,17 @@ export default function NewRequestPage() {
 
             {currentStep === 3 && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-400">
+                {/* Message Patient */}
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-1">💬 Message du patient</label>
+                  <textarea
+                    className="w-full bg-slate-50 p-4 rounded-2xl font-medium outline-none focus:bg-white border-2 border-transparent focus:border-blue-500/20 transition-all min-h-[120px]"
+                    value={newRequest.message_patient || ''}
+                    onChange={(e) => setNewRequest({ ...newRequest, message_patient: e.target.value })}
+                    placeholder="Message ou remarques du patient..."
+                  />
+                </div>
+
                 <div className="border-4 border-dashed border-slate-50 rounded-[2.5rem] p-16 text-center group hover:border-blue-100 hover:bg-blue-50/30 transition-all cursor-pointer relative">
                     <input type="file" multiple onChange={(e) => e.target.files && setPatientMediaFiles(Array.from(e.target.files))} className="absolute inset-0 opacity-0 cursor-pointer" />
                     <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">

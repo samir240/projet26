@@ -42,6 +42,7 @@ interface Treatment {
 interface Procedure {
   id_procedure: number;
   nom: string;
+  nom_procedure: string;
   description: string;
   categorie: string;
   langue: string;
@@ -3379,7 +3380,7 @@ const deleteDoctor = async (idDoctor: number) => {
                                   {procedure.langue}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-600 mb-3">{procedure.description}</p>
+                              <p className="text-sm text-gray-600 mb-3">{procedure.nom_procedure}</p>
 
                               {/* Details (only if selected) */}
                               {isSelected && selectedProc && (

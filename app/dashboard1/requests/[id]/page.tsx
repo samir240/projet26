@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { X, Bell } from 'lucide-react';
+import languagesData from '@/app/json/languages.json';
+import countriesData from '@/app/json/countries.json';
 
 interface Patient {
   id_patient: number;
@@ -85,6 +87,11 @@ export default function PatientDetailPage() {
   const [assignedHospitals, setAssignedHospitals] = useState<any[]>([]);
   const [selectedHospitalIds, setSelectedHospitalIds] = useState<number[]>([]);
   const [hospitalsLoading, setHospitalsLoading] = useState(false);
+
+  // Patient media state
+  const [patientMedia, setPatientMedia] = useState<any[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [newMediaFiles, setNewMediaFiles] = useState<File[]>([]);
 
   useEffect(() => {
     if (!patientId) return;
@@ -253,6 +260,146 @@ export default function PatientDetailPage() {
       setAssignedHospitals([]);
     } finally {
       setHospitalsLoading(false);
+    }
+  };
+
+  // Calcul automatique de l'IMC
+  useEffect(() => {
+    if (editingPatient.poids && editingPatient.taille) {
+      const poids = parseFloat(String(editingPatient.poids));
+      const taille = parseFloat(String(editingPatient.taille));
+      
+      if (poids > 0 && taille > 0) {
+        const tailleEnMetres = taille / 100;
+        const imc = (poids / (tailleEnMetres * tailleEnMetres)).toFixed(2);
+        setEditingPatient(prev => ({ ...prev, imc: parseFloat(imc) }));
+      }
+    }
+  }, [editingPatient.poids, editingPatient.taille]);
+
+  // Charger les médias quand l'onglet Documents est activé
+  useEffect(() => {
+    if (mainTab === 'Request' && subTab === 'Documents' && currentRequest?.id_patient) {
+      console.log('🔄 Documents tab activated, loading media...');
+      loadPatientMedia();
+    }
+  }, [mainTab, subTab, currentRequest?.id_patient]);
+
+  // Charger les médias du patient
+  const loadPatientMedia = async () => {
+    const requestId = patientId; // patientId est en fait l'ID de la requête (params.id)
+    const actualPatientId = currentRequest?.id_patient;
+    
+    console.log('📸 Loading patient media:', { requestId, actualPatientId });
+    
+    if (!requestId || !actualPatientId) {
+      console.warn('⚠️ Missing IDs - Cannot load media');
+      return;
+    }
+    
+    setMediaLoading(true);
+    try {
+      // Charger toutes les photos depuis l'API
+      const response = await fetch('https://pro.medotra.com/app/http/api/galerie_patient.php');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const allMedia = await response.json();
+      console.log('📥 All media received:', allMedia);
+      
+      // Filtrer pour cette requête spécifique
+      let filteredMedia = [];
+      if (Array.isArray(allMedia)) {
+        filteredMedia = allMedia.filter((m: any) => m.id_request === Number(requestId));
+      } else if (allMedia.success && Array.isArray(allMedia.data)) {
+        filteredMedia = allMedia.data.filter((m: any) => m.id_request === Number(requestId));
+      } else if (allMedia.success === false) {
+        // Pas de données, tableau vide
+        filteredMedia = [];
+      } else {
+        // Format inattendu, essayer quand même
+        filteredMedia = allMedia;
+      }
+      
+      console.log(`✅ Loaded ${filteredMedia.length} photos for request ${requestId}`);
+      setPatientMedia(filteredMedia);
+      
+    } catch (err) {
+      console.error('Error loading patient media:', err);
+      setPatientMedia([]);
+    } finally {
+      setMediaLoading(false);
+    }
+  };
+
+  // Upload new media files
+  const uploadNewMedia = async () => {
+    const requestId = patientId; // patientId est en fait l'ID de la requête
+    const actualPatientId = currentRequest?.id_patient;
+    
+    if (newMediaFiles.length === 0 || !requestId || !actualPatientId) {
+      alert('⚠️ Veuillez sélectionner des fichiers');
+      return;
+    }
+
+    setMediaLoading(true);
+    try {
+      const uploadPromises = newMediaFiles.map(async (file) => {
+        const formData = new FormData();
+        formData.append('type', 'patient_media');
+        formData.append('entity_id', String(actualPatientId));
+        formData.append('request_id', String(requestId));
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        return await response.json();
+      });
+
+      await Promise.all(uploadPromises);
+      alert('✅ Photos uploadées avec succès');
+      setNewMediaFiles([]);
+      loadPatientMedia();
+    } catch (err) {
+      console.error('Error uploading media:', err);
+      alert('❌ Erreur lors de l\'upload des photos');
+    } finally {
+      setMediaLoading(false);
+    }
+  };
+
+  // Delete media
+  const deleteMedia = async (mediaId: number) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette photo ?')) return;
+
+    setMediaLoading(true);
+    try {
+      const response = await fetch('https://pro.medotra.com/app/http/api/galerie_patient.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          id_galerie: mediaId,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        alert('✅ Photo supprimée avec succès');
+        loadPatientMedia();
+      } else {
+        alert('❌ Erreur lors de la suppression');
+      }
+    } catch (err) {
+      console.error('Error deleting media:', err);
+      alert('❌ Erreur lors de la suppression');
+    } finally {
+      setMediaLoading(false);
     }
   };
 
@@ -940,21 +1087,33 @@ export default function PatientDetailPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Langue</label>
-                      <input
-                        type="text"
+                      <select
                         value={editingPatient.langue || ''}
                         onChange={(e) => setEditingPatient({ ...editingPatient, langue: e.target.value })}
                         className="w-full border p-2 rounded"
-                      />
+                      >
+                        <option value="">-- Sélectionner une langue --</option>
+                        {languagesData.languages.map((lang) => (
+                          <option key={lang.code} value={lang.code}>
+                            {lang.name} ({lang.native_name})
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Pays</label>
-                      <input
-                        type="text"
+                      <select
                         value={editingPatient.pays || ''}
                         onChange={(e) => setEditingPatient({ ...editingPatient, pays: e.target.value })}
                         className="w-full border p-2 rounded"
-                      />
+                      >
+                        <option value="">-- Sélectionner un pays --</option>
+                        {countriesData.countries.map((country) => (
+                          <option key={country.code} value={country.name}>
+                            {country.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Poids (kg)</label>
@@ -988,13 +1147,13 @@ export default function PatientDetailPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold mb-1">IMC</label>
+                      <label className="block text-sm font-semibold mb-1">IMC (Calculé automatiquement)</label>
                       <input
-                        type="number"
-                        step="0.1"
-                        value={editingPatient.imc ?? ''}
-                        onChange={(e) => setEditingPatient({ ...editingPatient, imc: e.target.value ? Number(e.target.value) : null })}
-                        className="w-full border p-2 rounded"
+                        type="text"
+                        value={editingPatient.imc ? Number(editingPatient.imc).toFixed(2) : 'Entrez poids et taille'}
+                        readOnly
+                        disabled
+                        className="w-full border p-2 rounded bg-gray-100 cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -1055,15 +1214,103 @@ export default function PatientDetailPage() {
           {/* Documents Tab */}
           {mainTab === 'Request' && subTab === 'Documents' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Message :</label>
+              <div className="lg:col-span-2 space-y-6">
+                {/* Message Section */}
+                <div className="bg-white border rounded-lg p-4">
+                  <label className="block text-sm font-semibold mb-2">Message du patient :</label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     className="w-full border border-gray-300 rounded p-3 h-32 resize-y"
                     placeholder="Ajouter un message..."
                   />
+                </div>
+
+                {/* Photos du patient */}
+                <div className="bg-white border rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">📸 Photos du patient</h3>
+                    <div className="flex gap-2">
+                      <label className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer text-sm font-medium">
+                        ➕ Ajouter des photos
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              setNewMediaFiles(Array.from(e.target.files));
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      {newMediaFiles.length > 0 && (
+                        <button
+                          onClick={uploadNewMedia}
+                          disabled={mediaLoading}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium disabled:opacity-50"
+                        >
+                          ⬆️ Upload ({newMediaFiles.length})
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Preview des nouveaux fichiers à uploader */}
+                  {newMediaFiles.length > 0 && (
+                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm font-semibold mb-2">Fichiers sélectionnés :</p>
+                      <div className="flex flex-wrap gap-2">
+                        {newMediaFiles.map((file, idx) => (
+                          <div key={idx} className="flex items-center gap-2 bg-white px-3 py-1 rounded border">
+                            <span className="text-xs">{file.name}</span>
+                            <button
+                              onClick={() => setNewMediaFiles(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grille de photos existantes */}
+                  {mediaLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-2 text-gray-600">Chargement...</p>
+                    </div>
+                  ) : patientMedia.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <p className="text-lg mb-2">📷 Aucune photo</p>
+                      <p className="text-sm">Ajoutez des photos du patient en cliquant sur le bouton ci-dessus</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {patientMedia.map((media) => (
+                        <div key={media.id_galerie} className="relative group border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
+                          <img
+                            src={`https://pro.medotra.com/${media.path}`}
+                            alt="Patient media"
+                            className="w-full h-48 object-cover"
+                          />
+                          <button
+                            onClick={() => deleteMedia(media.id_galerie)}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                            title="Supprimer"
+                          >
+                            🗑️
+                          </button>
+                          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                            {new Date(media.created_at).toLocaleDateString('fr-FR')}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="lg:col-span-1">

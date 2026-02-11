@@ -31,13 +31,22 @@ export default function SalesAgentsPage() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editAgent, setEditAgent] = useState<SalesAgent | null>(null);
-  const [activeTab, setActiveTab] = useState('general');
-  const [activeTabAdd, setActiveTabAdd] = useState('general');
 
   const [showAddModal, setShowAddModal] = useState(false);
   
-  // New Agent State
-  const [newAgent, setNewAgent] = useState<Partial<SalesAgent>>({
+  // New Agent State (unifié avec les infos utilisateur)
+  const [newAgent, setNewAgent] = useState<{
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+    langue: string;
+    note: string;
+    is_active: number;
+    photo: string | null;
+    username: string;
+    password: string;
+  }>({
     nom: '',
     prenom: '',
     email: '',
@@ -45,7 +54,9 @@ export default function SalesAgentsPage() {
     langue: 'fr',
     note: '',
     is_active: 1,
-    photo: null
+    photo: null,
+    username: '',
+    password: ''
   });
 
   // Photo preview states
@@ -159,7 +170,6 @@ export default function SalesAgentsPage() {
         <button 
           onClick={() => {
             setShowAddModal(true);
-            setActiveTabAdd('general');
             setPhotoPreview(null);
             setNewAgent({
               nom: '',
@@ -169,7 +179,9 @@ export default function SalesAgentsPage() {
               langue: 'fr',
               note: '',
               is_active: 1,
-              photo: null
+              photo: null,
+              username: '',
+              password: ''
             });
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm"
@@ -246,8 +258,7 @@ export default function SalesAgentsPage() {
                       onClick={() => { 
                         setEditAgent(agent); 
                         setEditPhotoPreview(getPhotoUrl(agent.photo));
-                        setShowEditModal(true); 
-                        setActiveTab('general');
+                        setShowEditModal(true);
                       }}
                     />
                     <Trash2
@@ -290,366 +301,458 @@ export default function SalesAgentsPage() {
         </div>
       )}
 
-      {/* ADD MODAL */}
+      {/* ADD MODAL - FORMULAIRE UNIFIÉ */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl w-full max-w-xl relative shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-xl w-full max-w-2xl relative shadow-xl max-h-[90vh] overflow-y-auto">
             <X
-              className="absolute top-4 right-4 cursor-pointer"
+              className="absolute top-4 right-4 cursor-pointer hover:bg-gray-100 rounded-full p-1"
               onClick={() => {
                 setShowAddModal(false);
-                setActiveTabAdd('general');
                 setPhotoPreview(null);
+                setNewAgent({
+                  nom: '',
+                  prenom: '',
+                  email: '',
+                  telephone: '',
+                  langue: 'fr',
+                  note: '',
+                  is_active: 1,
+                  photo: null,
+                  username: '',
+                  password: ''
+                });
               }}
             />
-            <h2 className="text-xl font-bold mb-4">Ajouter un nouvel agent</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">🆕 Créer un agent commercial</h2>
 
-            {/* TABS */}
-            <div className="flex gap-2 mb-4">
-              {['general', 'contact'].map((tab) => (
-                <button
-                  key={tab}
-                  className={`px-3 py-1 rounded capitalize ${activeTabAdd === tab ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
-                  onClick={() => setActiveTabAdd(tab)}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {/* CONTENU - ONGLET GENERAL */}
-            {activeTabAdd === 'general' && (
-              <div className="space-y-4">
-                {/* PHOTO UPLOAD */}
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Photo</label>
-                  <div className="flex items-center gap-4">
-                    {photoPreview ? (
-                      <div className="relative">
-                        <img 
-                          src={photoPreview} 
-                          alt="Preview"
-                          className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPhotoPreview(null);
-                            setNewAgent(prev => ({ ...prev, photo: null }));
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-                    <label className="cursor-pointer">
-                      <div className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                        <Upload className="w-4 h-4" />
-                        <span>Choisir une photo</span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handlePhotoChange(e, false)}
+            {/* FORMULAIRE UNIFIÉ - SANS ONGLETS */}
+            <div className="space-y-5">
+              {/* PHOTO */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <label className="block text-sm font-semibold mb-3 text-gray-700">Photo de profil</label>
+                <div className="flex items-center gap-4">
+                  {photoPreview ? (
+                    <div className="relative">
+                      <img 
+                        src={photoPreview} 
+                        alt="Preview"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
                       />
-                    </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhotoPreview(null);
+                          setNewAgent(prev => ({ ...prev, photo: null }));
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
+                      <User className="w-10 h-10 text-gray-400" />
+                    </div>
+                  )}
+                  <label className="cursor-pointer">
+                    <div className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm shadow-sm transition">
+                      <Upload className="w-4 h-4" />
+                      <span>Choisir une photo</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handlePhotoChange(e, false)}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* INFORMATIONS PERSONNELLES */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
+                  📋 Informations personnelles
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Nom *</label>
+                    <input
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={newAgent.nom}
+                      onChange={(e) => setNewAgent({ ...newAgent, nom: e.target.value })}
+                      placeholder="Dupont"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Prénom</label>
+                    <input
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={newAgent.prenom}
+                      onChange={(e) => setNewAgent({ ...newAgent, prenom: e.target.value })}
+                      placeholder="Jean"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Email *</label>
+                    <input
+                      type="email"
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={newAgent.email}
+                      onChange={(e) => setNewAgent({ ...newAgent, email: e.target.value })}
+                      placeholder="jean.dupont@medotra.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Téléphone</label>
+                    <input
+                      type="tel"
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={newAgent.telephone}
+                      onChange={(e) => setNewAgent({ ...newAgent, telephone: e.target.value })}
+                      placeholder="+33 6 12 34 56 78"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Langue</label>
+                    <select
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={newAgent.langue}
+                      onChange={(e) => setNewAgent({ ...newAgent, langue: e.target.value })}
+                    >
+                      {languagesData.languages.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.native_name} ({lang.name})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Status</label>
+                    <select
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={newAgent.is_active}
+                      onChange={(e) => setNewAgent({ ...newAgent, is_active: Number(e.target.value) })}
+                    >
+                      <option value={1}>✅ Actif</option>
+                      <option value={0}>⛔ Inactif</option>
+                    </select>
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Nom *</label>
-                  <input
-                    className="w-full border p-2 rounded"
-                    value={newAgent.nom || ''}
-                    onChange={(e) => setNewAgent({ ...newAgent, nom: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Prénom</label>
-                  <input
-                    className="w-full border p-2 rounded"
-                    value={newAgent.prenom || ''}
-                    onChange={(e) => setNewAgent({ ...newAgent, prenom: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Langue</label>
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={newAgent.langue || 'fr'}
-                    onChange={(e) => setNewAgent({ ...newAgent, langue: e.target.value })}
-                  >
-                    {languagesData.languages.map((lang) => (
-                      <option key={lang.code} value={lang.code}>
-                        {lang.native_name} ({lang.name})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Status</label>
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={newAgent.is_active || 1}
-                    onChange={(e) => setNewAgent({ ...newAgent, is_active: Number(e.target.value) })}
-                  >
-                    <option value={1}>Active</option>
-                    <option value={0}>Inactive</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Note</label>
-                  <textarea
-                    className="w-full border p-2 rounded"
-                    rows={3}
-                    value={newAgent.note || ''}
-                    onChange={(e) => setNewAgent({ ...newAgent, note: e.target.value })}
-                  />
+              {/* COMPTE UTILISATEUR */}
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <h3 className="font-bold text-green-900 mb-2 flex items-center gap-2">
+                  🔐 Compte utilisateur
+                </h3>
+                <p className="text-xs text-green-700 mb-4">Rôle: Sales Agent (pas de rattachement à un hôpital)</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Username *</label>
+                    <input
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      value={newAgent.username}
+                      onChange={(e) => setNewAgent({ ...newAgent, username: e.target.value })}
+                      placeholder="jean.dupont"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Mot de passe *</label>
+                    <input
+                      type="password"
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      value={newAgent.password}
+                      onChange={(e) => setNewAgent({ ...newAgent, password: e.target.value })}
+                      placeholder="••••••••"
+                    />
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* CONTENU - ONGLET CONTACT */}
-            {activeTabAdd === 'contact' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Email *</label>
-                  <input
-                    type="email"
-                    className="w-full border p-2 rounded"
-                    value={newAgent.email || ''}
-                    onChange={(e) => setNewAgent({ ...newAgent, email: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Téléphone</label>
-                  <input
-                    type="tel"
-                    className="w-full border p-2 rounded"
-                    value={newAgent.telephone || ''}
-                    onChange={(e) => setNewAgent({ ...newAgent, telephone: e.target.value })}
-                  />
-                </div>
+              {/* NOTE */}
+              <div>
+                <label className="block text-sm font-semibold mb-1 text-gray-700">Note / Commentaire (optionnel)</label>
+                <textarea
+                  className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                  rows={3}
+                  value={newAgent.note}
+                  onChange={(e) => setNewAgent({ ...newAgent, note: e.target.value })}
+                  placeholder="Notes supplémentaires..."
+                />
               </div>
-            )}
+            </div>
 
-            {/* FOOTER ACTIONS */}
+            {/* FOOTER */}
             <div className="flex justify-end gap-3 mt-6 border-t pt-4">
               <button
-                className="px-4 py-2 border rounded hover:bg-gray-50 transition-colors"
+                className="px-5 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 onClick={() => {
                   setShowAddModal(false);
-                  setActiveTabAdd('general');
                   setPhotoPreview(null);
+                  setNewAgent({
+                    nom: '',
+                    prenom: '',
+                    email: '',
+                    telephone: '',
+                    langue: 'fr',
+                    note: '',
+                    is_active: 1,
+                    photo: null,
+                    username: '',
+                    password: ''
+                  });
                 }}
               >
                 Annuler
               </button>
               <button
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors shadow-md"
+                className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md font-semibold flex items-center gap-2"
                 onClick={async () => {
+                  // Validation
                   if (!newAgent.nom || !newAgent.email) {
-                    alert("Le nom et l'email sont obligatoires.");
+                    alert("❌ Le nom et l'email sont obligatoires.");
                     return;
                   }
+                  if (!newAgent.username || !newAgent.password) {
+                    alert("❌ Le username et le mot de passe sont obligatoires.");
+                    return;
+                  }
+
                   try {
-                    const res = await fetch(API_URL, {
+                    // Étape 1: Créer l'agent commercial
+                    const resAgent = await fetch(API_URL, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(newAgent),
+                      body: JSON.stringify({
+                        nom: newAgent.nom,
+                        prenom: newAgent.prenom,
+                        email: newAgent.email,
+                        telephone: newAgent.telephone,
+                        langue: newAgent.langue,
+                        note: newAgent.note,
+                        is_active: newAgent.is_active,
+                        photo: newAgent.photo
+                      }),
                     });
                     
-                    const result = await res.json();
-                    if (result.success) {
-                      alert("Agent créé avec succès !");
+                    const resultAgent = await resAgent.json();
+                    if (!resultAgent.success) {
+                      alert("❌ Erreur création agent: " + (resultAgent.error || 'Erreur inconnue'));
+                      return;
+                    }
+
+                    const newAgentId = resultAgent.id_commercial;
+
+                    // Étape 2: Créer l'utilisateur avec rôle 3 (id_hospital null)
+                    const resUser = await fetch('/api/users', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'create',
+                        username: newAgent.username,
+                        email: newAgent.email,
+                        password: newAgent.password,
+                        nom: newAgent.nom,
+                        prenom: newAgent.prenom,
+                        telephone: newAgent.telephone,
+                        id_role: 3, // Rôle Sales Agent
+                        system: 'A',
+                        id_commercial: newAgentId,
+                        id_hospital: null, // null pour les sales agents
+                        is_active: newAgent.is_active
+                      }),
+                    });
+
+                    const resultUser = await resUser.json();
+                    if (resultUser.success) {
+                      alert("✅ Agent commercial et compte utilisateur créés avec succès !");
                       window.location.reload();
                     } else {
-                      alert("Erreur: " + (result.error || 'Erreur inconnue'));
+                      alert("⚠️ Agent créé, mais erreur lors de la création du compte utilisateur: " + (resultUser.error || 'Erreur inconnue'));
+                      window.location.reload();
                     }
                   } catch (err) {
-                    alert("Erreur de connexion à l'API");
+                    console.error('Erreur:', err);
+                    alert("❌ Erreur de connexion à l'API");
                   }
                 }}
               >
-                Créer l'agent
+                <span>✅</span> Créer l'agent + compte
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* EDIT MODAL */}
+      {/* EDIT MODAL - FORMULAIRE UNIFIÉ */}
       {showEditModal && editAgent && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl w-full max-w-xl relative shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-xl w-full max-w-2xl relative shadow-xl max-h-[90vh] overflow-y-auto">
             <X
-              className="absolute top-4 right-4 cursor-pointer"
+              className="absolute top-4 right-4 cursor-pointer hover:bg-gray-100 rounded-full p-1"
               onClick={() => setShowEditModal(false)}
             />
-            <h2 className="text-xl font-bold mb-4">Modifier l'agent #{editAgent.id_commercial}</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">✏️ Modifier l'agent #{editAgent.id_commercial}</h2>
 
-            {/* TABS */}
-            <div className="flex gap-2 mb-4">
-              {['general', 'contact'].map((tab) => (
-                <button
-                  key={tab}
-                  className={`px-3 py-1 rounded capitalize ${activeTab === tab ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {/* TAB CONTENT */}
-            {activeTab === 'general' && (
-              <div className="space-y-4">
-                {/* PHOTO UPLOAD */}
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Photo</label>
-                  <div className="flex items-center gap-4">
-                    {editPhotoPreview ? (
-                      <div className="relative">
-                        <img 
-                          src={editPhotoPreview} 
-                          alt="Preview"
-                          className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditPhotoPreview(null);
-                            setEditAgent(prev => prev ? { ...prev, photo: null } : null);
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-                    <label className="cursor-pointer">
-                      <div className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                        <Upload className="w-4 h-4" />
-                        <span>Changer la photo</span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handlePhotoChange(e, true)}
+            {/* FORMULAIRE UNIFIÉ - SANS ONGLETS */}
+            <div className="space-y-5">
+              {/* PHOTO */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <label className="block text-sm font-semibold mb-3 text-gray-700">Photo de profil</label>
+                <div className="flex items-center gap-4">
+                  {editPhotoPreview ? (
+                    <div className="relative">
+                      <img 
+                        src={editPhotoPreview} 
+                        alt="Preview"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
                       />
-                    </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditPhotoPreview(null);
+                          setEditAgent(prev => prev ? { ...prev, photo: null } : null);
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
+                      <User className="w-10 h-10 text-gray-400" />
+                    </div>
+                  )}
+                  <label className="cursor-pointer">
+                    <div className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm shadow-sm transition">
+                      <Upload className="w-4 h-4" />
+                      <span>Changer la photo</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handlePhotoChange(e, true)}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* INFORMATIONS PERSONNELLES */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
+                  📋 Informations personnelles
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Nom *</label>
+                    <input
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={editAgent.nom}
+                      onChange={(e) => setEditAgent({ ...editAgent, nom: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Prénom</label>
+                    <input
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={editAgent.prenom || ''}
+                      onChange={(e) => setEditAgent({ ...editAgent, prenom: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Email *</label>
+                    <input
+                      type="email"
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={editAgent.email}
+                      onChange={(e) => setEditAgent({ ...editAgent, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Téléphone</label>
+                    <input
+                      type="tel"
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={editAgent.telephone || ''}
+                      onChange={(e) => setEditAgent({ ...editAgent, telephone: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Langue</label>
+                    <select
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={editAgent.langue || 'fr'}
+                      onChange={(e) => setEditAgent({ ...editAgent, langue: e.target.value })}
+                    >
+                      {languagesData.languages.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.native_name} ({lang.name})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-700">Status</label>
+                    <select
+                      className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={editAgent.is_active}
+                      onChange={(e) => setEditAgent({ ...editAgent, is_active: Number(e.target.value) })}
+                    >
+                      <option value={1}>✅ Actif</option>
+                      <option value={0}>⛔ Inactif</option>
+                    </select>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Nom *</label>
-                  <input
-                    className="w-full border p-2 rounded"
-                    value={editAgent.nom}
-                    onChange={(e) => setEditAgent({ ...editAgent, nom: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Prénom</label>
-                  <input
-                    className="w-full border p-2 rounded"
-                    value={editAgent.prenom || ''}
-                    onChange={(e) => setEditAgent({ ...editAgent, prenom: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Langue</label>
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={editAgent.langue || 'fr'}
-                    onChange={(e) => setEditAgent({ ...editAgent, langue: e.target.value })}
-                  >
-                    {languagesData.languages.map((lang) => (
-                      <option key={lang.code} value={lang.code}>
-                        {lang.native_name} ({lang.name})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Status</label>
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={editAgent.is_active}
-                    onChange={(e) => setEditAgent({ ...editAgent, is_active: Number(e.target.value) })}
-                  >
-                    <option value={1}>Active</option>
-                    <option value={0}>Inactive</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Note</label>
-                  <textarea
-                    className="w-full border p-2 rounded"
-                    rows={3}
-                    value={editAgent.note || ''}
-                    onChange={(e) => setEditAgent({ ...editAgent, note: e.target.value })}
-                  />
-                </div>
               </div>
-            )}
 
-            {activeTab === 'contact' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Email *</label>
-                  <input
-                    type="email"
-                    className="w-full border p-2 rounded"
-                    value={editAgent.email}
-                    onChange={(e) => setEditAgent({ ...editAgent, email: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Téléphone</label>
-                  <input
-                    type="tel"
-                    className="w-full border p-2 rounded"
-                    value={editAgent.telephone || ''}
-                    onChange={(e) => setEditAgent({ ...editAgent, telephone: e.target.value })}
-                  />
-                </div>
+              {/* INFO COMPTE UTILISATEUR */}
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <h3 className="font-bold text-green-900 mb-2 flex items-center gap-2">
+                  🔐 Compte utilisateur associé
+                </h3>
+                {editAgent.id_user ? (
+                  <div className="bg-white p-3 rounded border border-green-300">
+                    <p className="text-sm text-green-800">
+                      ✅ Cet agent a un compte utilisateur (ID: <strong>{editAgent.id_user}</strong>)
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Pour modifier les informations de connexion, utilisez la gestion des utilisateurs.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 p-3 rounded border border-yellow-300">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ Aucun compte utilisateur associé
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* ACTIONS */}
+              {/* NOTE */}
+              <div>
+                <label className="block text-sm font-semibold mb-1 text-gray-700">Note / Commentaire</label>
+                <textarea
+                  className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                  rows={3}
+                  value={editAgent.note || ''}
+                  onChange={(e) => setEditAgent({ ...editAgent, note: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* FOOTER */}
             <div className="flex justify-end gap-3 mt-6 border-t pt-4">
               <button
-                className="px-4 py-2 border rounded hover:bg-gray-50 transition-colors"
+                className="px-5 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 onClick={() => setShowEditModal(false)}
               >
                 Annuler
               </button>
               <button
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md font-semibold"
                 onClick={async () => {
                   if (!editAgent) return;
                   
@@ -668,17 +771,20 @@ export default function SalesAgentsPage() {
                       setAgents(prev =>
                         prev.map(a => a.id_commercial === editAgent.id_commercial ? editAgent : a)
                       );
+                      setFilteredAgents(prev =>
+                        prev.map(a => a.id_commercial === editAgent.id_commercial ? editAgent : a)
+                      );
                       setShowEditModal(false);
-                      alert("Mise à jour effectuée avec succès !");
+                      alert("✅ Mise à jour effectuée avec succès !");
                     } else {
-                      alert("Erreur API : " + (result.error || 'Erreur inconnue'));
+                      alert("❌ Erreur API : " + (result.error || 'Erreur inconnue'));
                     }
                   } catch (err) {
-                    alert("Impossible de contacter l'API.");
+                    alert("❌ Impossible de contacter l'API.");
                   }
                 }}
               >
-                Enregistrer
+                💾 Enregistrer
               </button>
             </div>
           </div>
